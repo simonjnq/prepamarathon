@@ -40,6 +40,7 @@ import {
   AddPractitionerInline,
   RemoveAssignmentButton,
 } from "./add-practitioner";
+import { AIAudit } from "./ai-audit";
 import { resolveAlertAction } from "./actions";
 
 export default async function PatientDetailPage(props: {
@@ -344,8 +345,13 @@ export default async function PatientDetailPage(props: {
         </section>
       )}
 
+      {/* AI audit (full width) */}
+      <div className="mt-7">
+        <AIAudit patientId={patientId} />
+      </div>
+
       {/* Two-column layout */}
-      <div className="mt-8 grid gap-6 lg:grid-cols-3">
+      <div className="mt-7 grid gap-6 lg:grid-cols-3">
         {/* LEFT (2 cols) — Parcours + Notes */}
         <div className="space-y-7 lg:col-span-2">
           {/* Active alerts (top of left column for visibility) */}
