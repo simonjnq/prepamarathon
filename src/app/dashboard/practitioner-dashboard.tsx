@@ -51,7 +51,7 @@ export async function PractitionerDashboard({
   const { data: alerts } = await supabase
     .from("alerts")
     .select(
-      "id, severity, title, message, created_at, patient_id, patients!inner(profiles!inner(first_name, last_name)), journeys:patient_id",
+      "id, severity, title, message, created_at, patient_id, patients!inner(profiles!inner(first_name, last_name))",
     )
     .is("resolved_at", null)
     .order("severity", { ascending: false })
@@ -150,7 +150,7 @@ export async function PractitionerDashboard({
               Alertes nécessitant votre attention
             </h2>
             <Link
-              href={"/patients" as never}
+              href={"/alerts" as never}
               className="text-sm font-medium text-coral hover:underline"
             >
               Voir tout

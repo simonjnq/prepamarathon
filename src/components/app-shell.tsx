@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  AlertTriangle,
   Calendar,
   CheckSquare,
   ClipboardList,
@@ -18,6 +19,7 @@ type NavItem = { href: string; label: string; Icon: LucideIcon };
 const PRACTITIONER_NAV: NavItem[] = [
   { href: "/dashboard", label: "Vue d'ensemble", Icon: Home },
   { href: "/patients", label: "Patients", Icon: Users },
+  { href: "/alerts", label: "Alertes", Icon: AlertTriangle },
   { href: "/agenda", label: "Mon agenda", Icon: Calendar },
 ];
 
