@@ -245,6 +245,28 @@ export async function removeAssignmentAction(formData: FormData) {
   if (patientId) revalidatePath(`/patients/${patientId}`);
 }
 
+export async function addDocumentRowAction(formData: FormData) {
+  const { supabase, profile } = await requirePractitioner();
+  const patientId = String(formData.get("patient_id") ?? "");
+  const type = String(formData.get("type") ?? "autre");
+  const title = String(formData.get("title") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const fileUrl = String(formData.get("file_url") ?? "").trim();
+  if (!patientId || !title) return;
+
+  await supabase.from("documents").insert({
+    patient_id: patientId,
+    uploaded_by: profile.id,
+    type,
+    title,
+    description: description || null,
+    file_url: fileUrl || null,
+  });
+
+  revalidatePath(`/patients/${patientId}`);
+  revalidatePath("/mes-documents");
+}
+
 export async function resolveAlertAction(formData: FormData) {
   const { supabase } = await requirePractitioner();
   const alertId = String(formData.get("alert_id") ?? "");

@@ -42,6 +42,7 @@ import {
 } from "./add-practitioner";
 import { AIAudit } from "./ai-audit";
 import { RemindersSection, type Reminder } from "./reminders-section";
+import { UploadDocument } from "./upload-document";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { resolveAlertAction } from "./actions";
 
@@ -625,17 +626,24 @@ export default async function PatientDetailPage(props: {
           <RemindersSection patientId={patientId} reminders={reminders} />
 
           {/* Documents */}
-          {docs && docs.length > 0 && (
-            <Section
-              icon={
-                <FileText
-                  size={18}
-                  strokeWidth={1.75}
-                  className="text-coral"
-                />
-              }
-              title={`Documents (${docs.length})`}
-            >
+          <Section
+            icon={
+              <FileText
+                size={18}
+                strokeWidth={1.75}
+                className="text-coral"
+              />
+            }
+            title={`Documents (${docs?.length ?? 0})`}
+          >
+            <div className="mb-3">
+              <UploadDocument patientId={patientId} />
+            </div>
+            {!docs || docs.length === 0 ? (
+              <p className="text-sm text-ink-muted">
+                Aucun document pour l&apos;instant.
+              </p>
+            ) : (
               <div className="space-y-3">
                 {docs.slice(0, 5).map((d) => (
                   <DocumentCard
@@ -653,8 +661,8 @@ export default async function PatientDetailPage(props: {
                   </p>
                 )}
               </div>
-            </Section>
-          )}
+            )}
+          </Section>
 
           {/* Upcoming appointments */}
           <Section

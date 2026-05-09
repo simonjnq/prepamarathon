@@ -80,18 +80,34 @@ export function DocumentCard({
           {uploadedByName && ` · ${uploadedByName}`}
         </p>
       </div>
-      <button
-        type="button"
-        title="Démo — pas de fichier réel"
-        className="shrink-0 rounded-md border border-line bg-surface px-3 py-2 text-xs font-bold text-ink-muted hover:border-coral hover:text-coral disabled:cursor-not-allowed disabled:opacity-40"
-        disabled
-      >
-        <Download
-          size={14}
-          strokeWidth={1.75}
-          className="inline align-text-bottom"
-        />
-      </button>
+      {doc.file_url ? (
+        <a
+          href={doc.file_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Ouvrir le document"
+          className="shrink-0 rounded-md border border-line bg-surface px-3 py-2 text-xs font-bold text-coral hover:border-coral"
+        >
+          <Download
+            size={14}
+            strokeWidth={1.75}
+            className="inline align-text-bottom"
+          />
+        </a>
+      ) : (
+        <button
+          type="button"
+          title="Démo — pas de fichier joint"
+          className="shrink-0 rounded-md border border-line bg-surface px-3 py-2 text-xs font-bold text-ink-muted disabled:cursor-not-allowed disabled:opacity-40"
+          disabled
+        >
+          <Download
+            size={14}
+            strokeWidth={1.75}
+            className="inline align-text-bottom"
+          />
+        </button>
+      )}
     </article>
   );
 }
