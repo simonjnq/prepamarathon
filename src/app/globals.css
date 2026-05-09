@@ -1,26 +1,121 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-cream: #f8f5f1;
+  --color-cream-soft: #f5efe9;
+  --color-surface: #ffffff;
+  --color-surface-warm: #fbf8f4;
+
+  --color-coral: #e86f47;
+  --color-coral-hover: #d85f38;
+  --color-coral-soft: #f3b9a4;
+  --color-coral-bg: #fce9e1;
+
+  --color-ink: #242525;
+  --color-ink-muted: #75716c;
+  --color-ink-light: #9b9591;
+
+  --color-line: #dfddd9;
+  --color-footer: #242424;
+
+  --color-leaf: #4f8a5b;
+  --color-leaf-bg: #e8f3ea;
+  --color-amber: #b7791f;
+  --color-amber-bg: #fff3d8;
+  --color-rust: #d9534f;
+  --color-rust-bg: #fbe3e1;
+  --color-stone: #5a7d9a;
+  --color-stone-bg: #e5edf3;
+
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+
+  --shadow-soft: 0 4px 12px rgba(36, 37, 37, 0.06);
+  --shadow-card: 0 12px 32px rgba(36, 37, 37, 0.10);
+  --shadow-float: 0 24px 60px rgba(36, 37, 37, 0.14);
+  --shadow-coral: 0 8px 20px rgba(232, 111, 71, 0.24);
+
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-accent: var(--font-cormorant), Georgia, serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+.font-accent {
+  font-family: var(--font-accent);
+  font-style: italic;
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-soft);
+}
+
+.btn-primary {
+  background: var(--color-coral);
+  color: #fff;
+  border-radius: var(--radius-md);
+  padding: 12px 18px;
+  font-weight: 700;
+  box-shadow: var(--shadow-coral);
+  transition: background 120ms ease;
+}
+.btn-primary:hover {
+  background: var(--color-coral-hover);
+}
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  padding: 12px 18px;
+  font-weight: 700;
+}
+
+.input {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  color: var(--color-ink);
+  width: 100%;
+  font-size: 15px;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+.input:focus {
+  outline: none;
+  border-color: var(--color-coral);
+  box-shadow: 0 0 0 3px rgba(232, 111, 71, 0.16);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
