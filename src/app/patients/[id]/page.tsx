@@ -46,21 +46,24 @@ export default async function PatientDetailPage(props: {
     .single()
     .then((r) => ({ specialty: r.data?.specialty ?? null }));
 
-  const { data: patient } = await supabase
-    .from("patients")
-    .select(
-      `
-      id, date_of_birth, gender, height_cm, weight_kg, occupation,
-      allergies, medications, blood_type, emergency_contact_name,
-      emergency_contact_phone, notes,
-      profiles:id (first_name, last_name, email, phone, username)
-    `,
-    )
-    .eq("id", patientId)
-    .maybeSingle();
+  const [{ data: patient }, { data: pf }] = await Promise.all([
+    supabase
+      .from("patients")
+      .select(
+        `id, date_of_birth, gender, height_cm, weight_kg, occupation,
+         allergies, medications, blood_type, emergency_contact_name,
+         emergency_contact_phone, notes`,
+      )
+      .eq("id", patientId)
+      .maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("first_name, last_name, email, phone, username")
+      .eq("id", patientId)
+      .maybeSingle(),
+  ]);
 
-  if (!patient) notFound();
-  const pf = (patient as unknown as { profiles: { first_name: string; last_name: string; email: string; phone: string | null; username: string | null } }).profiles;
+  if (!patient || !pf) notFound();
 
   const { data: journey } = await supabase
     .from("journeys")

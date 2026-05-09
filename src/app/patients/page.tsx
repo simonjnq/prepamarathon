@@ -39,35 +39,31 @@ export default async function PatientsListPage(props: {
   const goal = sp.goal ?? null;
   const onlyWithAlerts = sp.alerts === "1";
 
-  // Fetch all patients with their journey + profile
-  const { data: rows } = await supabase
-    .from("patients")
-    .select(
-      `
-      id,
-      occupation,
-      date_of_birth,
-      profiles:id (first_name, last_name),
-      journeys (
-        id,
-        sport_goal,
-        race_name,
-        race_date,
-        progress_pct,
-        weeks_to_race,
-        current_step_label,
-        status
-      )
-    `,
-    )
-    .order("created_at", { ascending: false });
+  // Fetch patients + their profile + their journeys (3 queries — split avoids
+  // PostgREST embed ambiguity when patients.id is both PK and FK to profiles.id).
+  const [patientsRes, profilesRes, journeysRes] = await Promise.all([
+    supabase
+      .from("patients")
+      .select("id, occupation, date_of_birth")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("profiles")
+      .select("id, first_name, last_name")
+      .eq("role", "patient"),
+    supabase
+      .from("journeys")
+      .select(
+        "id, patient_id, sport_goal, race_name, race_date, progress_pct, weeks_to_race, current_step_label, status",
+      ),
+  ]);
 
-  type Row = {
-    id: string;
-    occupation: string | null;
-    date_of_birth: string | null;
-    profiles: { first_name: string; last_name: string };
-    journeys: Array<{
+  const profileById = new Map<string, { first_name: string; last_name: string }>();
+  (profilesRes.data ?? []).forEach((p) =>
+    profileById.set(p.id, { first_name: p.first_name, last_name: p.last_name }),
+  );
+  const journeysByPatient = new Map<
+    string,
+    Array<{
       id: string;
       sport_goal: string;
       race_name: string | null;
@@ -76,13 +72,26 @@ export default async function PatientsListPage(props: {
       weeks_to_race: number | null;
       current_step_label: string | null;
       status: string;
-    }>;
-  };
-  const all = ((rows ?? []) as unknown as Row[]).map((r) => ({
-    ...r,
-    activeJourney:
-      r.journeys.find((j) => j.status === "active") ?? r.journeys[0] ?? null,
-  }));
+    }>
+  >();
+  (journeysRes.data ?? []).forEach((j) => {
+    const arr = journeysByPatient.get(j.patient_id) ?? [];
+    arr.push(j);
+    journeysByPatient.set(j.patient_id, arr);
+  });
+
+  const all = (patientsRes.data ?? []).map((p) => {
+    const journeys = journeysByPatient.get(p.id) ?? [];
+    return {
+      id: p.id,
+      occupation: p.occupation,
+      date_of_birth: p.date_of_birth,
+      profiles: profileById.get(p.id) ?? { first_name: "?", last_name: "?" },
+      journeys,
+      activeJourney:
+        journeys.find((j) => j.status === "active") ?? journeys[0] ?? null,
+    };
+  });
 
   // Alert counts per patient
   const { data: alertRows } = await supabase
