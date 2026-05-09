@@ -7,7 +7,7 @@ import { aiSuggestFromNote, type AISuggestion } from "./ai-actions";
 import { suggestTaskFromNote } from "@/lib/note-suggestions";
 
 type Suggestion = AISuggestion;
-type Source = "heuristic" | "claude" | "unavailable" | "error";
+type Source = "heuristic" | "gemini" | "unavailable" | "error";
 
 export function NewNoteForm({ patientId }: { patientId: string }) {
   const [content, setContent] = useState("");
@@ -20,7 +20,7 @@ export function NewNoteForm({ patientId }: { patientId: string }) {
 
   // Live heuristic preview (no AI call)
   useEffect(() => {
-    if (source === "claude") return; // don't override AI results
+    if (source === "gemini") return; // don't override AI results
     const h = suggestTaskFromNote(content);
     if (h) {
       setSuggestions([
@@ -43,13 +43,13 @@ export function NewNoteForm({ patientId }: { patientId: string }) {
     setAiError(null);
     try {
       const result = await aiSuggestFromNote(content);
-      if (result.source === "claude") {
+      if (result.source === "gemini") {
         setSuggestions(result.suggestions);
         setSelected(new Set(result.suggestions.map((_, i) => i)));
-        setSource("claude");
+        setSource("gemini");
       } else if (result.source === "unavailable") {
         setAiError(
-          "L'IA n'est pas configurée (ANTHROPIC_API_KEY manquante). Vous pouvez utiliser la suggestion automatique par mots-clés.",
+          "L'IA n'est pas configurée (GEMINI_API_KEY manquante). Vous pouvez utiliser la suggestion automatique par mots-clés.",
         );
       } else {
         setAiError(result.error ?? "Une erreur est survenue.");
@@ -119,7 +119,7 @@ export function NewNoteForm({ patientId }: { patientId: string }) {
         value={content}
         onChange={(e) => {
           setContent(e.target.value);
-          if (source === "claude") setSource("heuristic"); // typing again invalidates AI result
+          if (source === "gemini") setSource("heuristic"); // typing again invalidates AI result
         }}
         rows={4}
         placeholder="Observations, recommandations, prochaines étapes…"
@@ -137,8 +137,8 @@ export function NewNoteForm({ patientId }: { patientId: string }) {
           <div className="mb-2 flex items-center justify-between">
             <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-coral">
               <Sparkles size={13} strokeWidth={2.5} />
-              {source === "claude"
-                ? `Suggestions de Claude (${suggestions.length})`
+              {source === "gemini"
+                ? `Suggestions de Gemini (${suggestions.length})`
                 : "Tâche suggérée (mots-clés)"}
             </p>
             {suggestions.length > 1 && (
@@ -200,7 +200,7 @@ export function NewNoteForm({ patientId }: { patientId: string }) {
           ) : (
             <Sparkles size={14} strokeWidth={2.5} />
           )}
-          {aiLoading ? "Analyse en cours…" : "Affiner avec Claude"}
+          {aiLoading ? "Analyse en cours…" : "Affiner avec Gemini"}
         </button>
         <button
           type="submit"

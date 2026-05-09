@@ -8,7 +8,7 @@ export async function createNoteAction(formData: FormData) {
   const patientId = String(formData.get("patient_id") ?? "");
   const content = String(formData.get("content") ?? "").trim();
   const selectedRaw = String(formData.get("selected_suggestions") ?? "[]");
-  const isAi = formData.get("ai_source") === "claude";
+  const isAi = formData.get("ai_source") === "gemini";
 
   if (!patientId || !content) return;
 
