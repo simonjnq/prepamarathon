@@ -103,19 +103,20 @@ function ApptCard({
     reason: string | null;
     summary: string | null;
     practitioners: {
-      profiles: { first_name: string; last_name: string };
+      profiles: { first_name: string; last_name: string } | null;
       specialty: string;
-    };
+    } | null;
   };
   variant: "upcoming" | "past";
 }) {
   const pp = a.practitioners;
+  const ppProfile = pp?.profiles;
   return (
     <li className="card p-5">
       <div className="flex flex-wrap items-start gap-4">
         <Avatar
-          firstName={pp.profiles.first_name}
-          lastName={pp.profiles.last_name}
+          firstName={ppProfile?.first_name}
+          lastName={ppProfile?.last_name}
           size={48}
         />
         <div className="min-w-0 flex-1">
@@ -130,8 +131,9 @@ function ApptCard({
             )}
           </div>
           <p className="mt-1 text-sm text-ink-muted">
-            {pp.profiles.first_name} {pp.profiles.last_name} ·{" "}
-            {SPECIALTY_LABELS[pp.specialty] ?? pp.specialty}
+            {ppProfile?.first_name} {ppProfile?.last_name}
+            {pp?.specialty &&
+              ` · ${SPECIALTY_LABELS[pp.specialty] ?? pp.specialty}`}
           </p>
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-muted">
             <span className="inline-flex items-center gap-1.5">

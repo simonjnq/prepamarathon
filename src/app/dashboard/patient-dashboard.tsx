@@ -249,7 +249,7 @@ export async function PatientDashboard({
               <p className="mt-2 text-sm text-ink-muted">
                 {fmtDateTime(nextAppt.scheduled_at)}
               </p>
-              {apptPractitioner && (
+              {apptPractitioner?.profiles && (
                 <p className="mt-1 text-sm text-ink-muted">
                   avec {apptPractitioner.profiles.first_name}{" "}
                   {apptPractitioner.profiles.last_name}

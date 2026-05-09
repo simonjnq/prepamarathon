@@ -34,7 +34,7 @@ export default async function MonParcoursPage() {
       status: TimelineStep["status"];
       scheduled_at: string | null;
       completed_at: string | null;
-      practitioners: { profiles: { first_name: string; last_name: string } } | null;
+      practitioners: { profiles: { first_name: string; last_name: string } | null } | null;
     }>).map((s) => ({
       id: s.id,
       order_idx: s.order_idx,
@@ -44,7 +44,7 @@ export default async function MonParcoursPage() {
       status: s.status,
       scheduled_at: s.scheduled_at,
       completed_at: s.completed_at,
-      practitioner_name: s.practitioners
+      practitioner_name: s.practitioners?.profiles
         ? `${s.practitioners.profiles.first_name} ${s.practitioners.profiles.last_name}`
         : null,
     }));
