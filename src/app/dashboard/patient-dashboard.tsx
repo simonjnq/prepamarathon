@@ -1,11 +1,11 @@
 import Link from "next/link";
 import {
-  AlertCircle,
   Calendar as CalendarIcon,
   CheckSquare,
   ChevronRight,
   Footprints,
 } from "lucide-react";
+import { PatientFlag } from "./patient-flag";
 import { Badge, statusBadgeVariant } from "@/components/badge";
 import type { SessionProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -309,6 +309,10 @@ export async function PatientDashboard({
             Aucune tâche en attente. Vous êtes à jour.
           </p>
         )}
+      </section>
+
+      <section className="mt-8">
+        <PatientFlag />
       </section>
     </>
   );
