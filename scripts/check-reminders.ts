@@ -35,14 +35,7 @@ async function check() {
     console.log("✓ appointments writable");
   }
 
-  // 3. Realtime publication
-  const { data: pub } = await supabase
-    .rpc("pg_publication_tables_check" as never)
-    .then(() => ({ data: null as null }))
-    .catch(() => ({ data: null as null }));
-  void pub;
-
-  // 4. Storage bucket
+  // 3. Storage bucket
   const { data: buckets, error: bErr } = await supabase.storage.listBuckets();
   if (bErr) {
     console.log("? Storage :", bErr.message);
@@ -53,7 +46,7 @@ async function check() {
     );
   }
 
-  // 5. Try insert a reminder for any patient
+  // 4. Try insert a reminder for any patient
   const { data: patient } = await supabase
     .from("patients")
     .select("id")
