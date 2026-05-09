@@ -4,6 +4,7 @@ import {
   Calendar,
   CheckSquare,
   ClipboardList,
+  FileText,
   Footprints,
   Home,
   Users,
@@ -28,6 +29,7 @@ const PATIENT_NAV: NavItem[] = [
   { href: "/mon-parcours", label: "Mon parcours", Icon: Footprints },
   { href: "/mes-rdv", label: "Mes rendez-vous", Icon: Calendar },
   { href: "/mes-taches", label: "Mes tâches", Icon: CheckSquare },
+  { href: "/mes-documents", label: "Mes documents", Icon: FileText },
   { href: "/mon-questionnaire", label: "Questionnaire", Icon: ClipboardList },
 ];
 

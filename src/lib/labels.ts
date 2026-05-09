@@ -63,6 +63,25 @@ export const ALERT_SEVERITY_LABELS: Record<string, string> = {
   urgent: "Urgent",
 };
 
+export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
+  ordonnance: "Ordonnance",
+  compte_rendu: "Compte rendu",
+  recommandation: "Recommandation",
+  examen: "Examen",
+  autre: "Autre",
+};
+
+export const DOCUMENT_TYPE_TONES: Record<
+  string,
+  "coral" | "leaf" | "amber" | "stone" | "neutral"
+> = {
+  ordonnance: "coral",
+  compte_rendu: "stone",
+  recommandation: "leaf",
+  examen: "amber",
+  autre: "neutral",
+};
+
 export function ageFromDob(dob: string | null | undefined): number | null {
   if (!dob) return null;
   const d = new Date(dob);

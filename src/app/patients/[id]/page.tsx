@@ -5,12 +5,14 @@ import {
   ArrowLeft,
   CheckCircle2,
   Clock,
+  FileText,
   Heart,
   MapPin,
   Phone,
   Sparkles,
   Stethoscope,
 } from "lucide-react";
+import { DocumentCard } from "@/components/document-card";
 import { AppShell } from "@/components/app-shell";
 import { Avatar } from "@/components/avatar";
 import { Badge, severityBadgeVariant } from "@/components/badge";
@@ -171,6 +173,29 @@ export default async function PatientDetailPage(props: {
     .select("section, question_label, answer_text")
     .eq("patient_id", patientId)
     .order("section", { ascending: true });
+
+  const { data: docs } = await supabase
+    .from("documents")
+    .select("id, type, title, description, file_url, created_at, uploaded_by")
+    .eq("patient_id", patientId)
+    .order("created_at", { ascending: false });
+  const uploaderIds = Array.from(
+    new Set(
+      (docs ?? [])
+        .map((d) => d.uploaded_by)
+        .filter((x): x is string => !!x),
+    ),
+  );
+  const docUploaderById = new Map<string, string>();
+  if (uploaderIds.length > 0) {
+    const { data: ups } = await supabase
+      .from("profiles")
+      .select("id, first_name, last_name")
+      .in("id", uploaderIds);
+    (ups ?? []).forEach((p) =>
+      docUploaderById.set(p.id, `${p.first_name} ${p.last_name}`),
+    );
+  }
 
   // Group questionnaire by section
   const qBySection = new Map<
@@ -552,6 +577,38 @@ export default async function PatientDetailPage(props: {
               })}
             </ul>
           </Section>
+
+          {/* Documents */}
+          {docs && docs.length > 0 && (
+            <Section
+              icon={
+                <FileText
+                  size={18}
+                  strokeWidth={1.75}
+                  className="text-coral"
+                />
+              }
+              title={`Documents (${docs.length})`}
+            >
+              <div className="space-y-3">
+                {docs.slice(0, 5).map((d) => (
+                  <DocumentCard
+                    key={d.id}
+                    doc={d}
+                    uploadedByName={
+                      d.uploaded_by ? docUploaderById.get(d.uploaded_by) : null
+                    }
+                    compact
+                  />
+                ))}
+                {docs.length > 5 && (
+                  <p className="text-xs text-ink-light">
+                    + {docs.length - 5} autre{docs.length - 5 > 1 ? "s" : ""}
+                  </p>
+                )}
+              </div>
+            </Section>
+          )}
 
           {/* Upcoming appointments */}
           <Section

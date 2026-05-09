@@ -351,6 +351,22 @@ async function seedRelations(
         })),
       );
     }
+
+    // 10. Documents
+    if (p.documents?.length) {
+      await insert(
+        "documents",
+        p.documents.map((d) => ({
+          patient_id: patientId,
+          uploaded_by: practitionerIds.get(d.uploadedBy)!,
+          type: d.type,
+          title: d.title,
+          description: d.description ?? null,
+          file_url: null,
+          created_at: isoDateTime(d.daysOffset, 14),
+        })),
+      );
+    }
   }
 }
 

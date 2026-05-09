@@ -192,6 +192,14 @@ export type AssignmentSeed = {
   startedOffset: number;
 };
 
+export type DocumentSeed = {
+  type: "ordonnance" | "compte_rendu" | "recommandation" | "examen" | "autre";
+  title: string;
+  description?: string;
+  uploadedBy: string; // practitioner username
+  daysOffset: number; // negative for past
+};
+
 export type PatientSeed = {
   username: string;
   firstName: string;
@@ -232,6 +240,7 @@ export type PatientSeed = {
   alerts: AlertSeed[];
   pains: PainSeed[];
   questionnaire: QResponseSeed[];
+  documents?: DocumentSeed[];
 };
 
 const baseQuestionnaire = (overrides: Partial<Record<string, string>>): QResponseSeed[] => {
@@ -383,6 +392,11 @@ export const patients: PatientSeed[] = [
       weekly_volume: "45 km",
       sleep_quality: "8/10",
     }),
+    documents: [
+      { type: "compte_rendu", title: "Compte rendu — test d'effort", description: "Test d'effort jusqu'à 175 bpm. Pas d'arythmie. FC max recommandée 165 en zone 3.", uploadedBy: "laurent.medecindusport", daysOffset: -45 },
+      { type: "ordonnance", title: "Ordonnance — 8 séances de kinésithérapie", description: "Suivi mollet droit, chaîne postérieure.", uploadedBy: "dupont.kine", daysOffset: -25 },
+      { type: "recommandation", title: "Plan nutritionnel personnalisé", description: "Apports hydriques et glucidiques pour préparation marathon.", uploadedBy: "fontaine.nutritionniste", daysOffset: -30 },
+    ],
   },
 
   // -------------------- 2. THOMAS LEFEBVRE --------------------
@@ -454,6 +468,11 @@ export const patients: PatientSeed[] = [
       fears: "Inquiet vis-à-vis du suivi cardio",
       sleep_quality: "6/10",
     }),
+    documents: [
+      { type: "examen", title: "ECG de repos", description: "Tracé normal, rythme sinusal régulier 68 bpm.", uploadedBy: "laurent.medecindusport", daysOffset: -45 },
+      { type: "ordonnance", title: "Renouvellement Amlor 5mg", description: "Posologie inchangée — 1 cp/jour pendant 3 mois.", uploadedBy: "laurent.medecindusport", daysOffset: -45 },
+      { type: "compte_rendu", title: "Compte rendu — bilan nutritionnel", description: "Plan -3 kg en 16 semaines. Réduction sucres et alcool weekend.", uploadedBy: "fontaine.nutritionniste", daysOffset: -25 },
+    ],
   },
 
   // -------------------- 3. CAMILLE MARTIN --------------------
@@ -524,6 +543,10 @@ export const patients: PatientSeed[] = [
       motivation: "8/10",
       fears: "Que la fatigue ne passe pas",
     }),
+    documents: [
+      { type: "ordonnance", title: "Bilan biologique complet", description: "NFS, ferritine, vit D, B12, TSH, cortisol. À jeun.", uploadedBy: "laurent.medecindusport", daysOffset: -30 },
+      { type: "recommandation", title: "Plan alimentation anti-fatigue", description: "Apport en fer héminique, glucides complexes post-effort, suppléments B12.", uploadedBy: "fontaine.nutritionniste", daysOffset: -8 },
+    ],
   },
 
   // -------------------- 4. JULIEN BERNARD --------------------
@@ -598,6 +621,10 @@ export const patients: PatientSeed[] = [
       motivation: "10/10",
       fears: "Aucune particulière",
     }),
+    documents: [
+      { type: "compte_rendu", title: "Bilan kiné préventif", description: "Hyperlaxité ligamentaire, quadri G tendu. Programme renforcement excentrique.", uploadedBy: "dupont.kine", daysOffset: -18 },
+      { type: "recommandation", title: "Plan nutritionnel récupération", description: "1.6 g/kg de protéines, collation 25-30 g dans les 30 min post-séance.", uploadedBy: "fontaine.nutritionniste", daysOffset: -10 },
+    ],
   },
 
   // -------------------- 5. SOPHIE PETIT --------------------
@@ -675,6 +702,11 @@ export const patients: PatientSeed[] = [
       fears: "Récidive de blessure",
       sleep_quality: "8/10",
     }),
+    documents: [
+      { type: "compte_rendu", title: "Compte rendu post-opératoire LCA", description: "Genou stable, mobilité 0-130°. Feu vert reprise course en protocole progressif.", uploadedBy: "laurent.medecindusport", daysOffset: -75 },
+      { type: "recommandation", title: "Protocole reprise course post-LCA", description: "4 sem marche/course alternée, montée progressive. Pas de pivot avant 3 mois.", uploadedBy: "laurent.medecindusport", daysOffset: -75 },
+      { type: "compte_rendu", title: "Bilan ostéopathie globale", description: "Bassin antériorisé. Travail myofascial + respiration diaphragmatique.", uploadedBy: "mercier.osteo", daysOffset: -50 },
+    ],
   },
 
   // -------------------- 6. ANTOINE ROUSSEAU --------------------
@@ -758,6 +790,12 @@ export const patients: PatientSeed[] = [
       fears: "Rechute tendinite",
       sleep_quality: "7/10",
     }),
+    documents: [
+      { type: "compte_rendu", title: "Bilan podologique + prescription semelles", description: "Pronation excessive pied gauche. Semelles correctrices CAD/CAM commandées.", uploadedBy: "girard.podologue", daysOffset: -70 },
+      { type: "ordonnance", title: "Protocole HSR mollets — 8 séances", description: "Heavy Slow Resistance, charges progressives. Suivi tendinite achille G.", uploadedBy: "dupont.kine", daysOffset: -45 },
+      { type: "compte_rendu", title: "Bilan ostéopathie", description: "Bassin gauche en rotation antérieure. Travail manuel chaîne postérieure.", uploadedBy: "mercier.osteo", daysOffset: -30 },
+      { type: "recommandation", title: "Plan nutritionnel performance", description: "2800 kcal/j sur semaines de gros volume. Glucides pré et post-effort.", uploadedBy: "fontaine.nutritionniste", daysOffset: -60 },
+    ],
   },
 
   // -------------------- 7. LÉA MOREAU --------------------
@@ -831,6 +869,9 @@ export const patients: PatientSeed[] = [
       fears: "Que la blessure devienne chronique",
       sleep_quality: "6/10",
     }),
+    documents: [
+      { type: "ordonnance", title: "Repos relatif + glaçage", description: "STOP course 10 j, glace 3x/jour, étirements doux. RDV de suivi à 2 sem.", uploadedBy: "dupont.kine", daysOffset: -5 },
+    ],
   },
 
   // -------------------- 8. NICOLAS GARCIA --------------------
@@ -908,5 +949,11 @@ export const patients: PatientSeed[] = [
       sleep_quality: "7/10",
       fears: "Bien tenir le suivi cardio",
     }),
+    documents: [
+      { type: "examen", title: "ECG de repos", description: "Rythme sinusal régulier, 72 bpm. Pas d'anomalie.", uploadedBy: "laurent.medecindusport", daysOffset: -50 },
+      { type: "compte_rendu", title: "Compte rendu — test d'effort", description: "Normal jusqu'à 165 bpm. Pas d'arythmie. FC max conseillée 160.", uploadedBy: "laurent.medecindusport", daysOffset: -40 },
+      { type: "ordonnance", title: "Renouvellement Cozaar 50", description: "Posologie inchangée — 1 cp/jour pendant 3 mois.", uploadedBy: "laurent.medecindusport", daysOffset: -50 },
+      { type: "recommandation", title: "Plan nutritionnel + perte 3 kg", description: "Réduction sucres rapides et alcool. Cible 75 kg avant course.", uploadedBy: "fontaine.nutritionniste", daysOffset: -30 },
+    ],
   },
 ];
