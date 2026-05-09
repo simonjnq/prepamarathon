@@ -47,6 +47,34 @@ export async function createNoteAction(formData: FormData) {
   revalidatePath(`/patients/${patientId}`);
 }
 
+export async function createAppointmentAction(formData: FormData) {
+  const { supabase, profile } = await requirePractitioner();
+  const patientId = String(formData.get("patient_id") ?? "");
+  const date = String(formData.get("date") ?? "");
+  const time = String(formData.get("time") ?? "");
+  const durationStr = String(formData.get("duration") ?? "30");
+  const location = String(formData.get("location") ?? "").trim();
+  const reason = String(formData.get("reason") ?? "").trim();
+
+  if (!patientId || !date || !time || !reason) return;
+
+  const scheduled = new Date(`${date}T${time}:00`);
+  if (Number.isNaN(scheduled.getTime())) return;
+
+  await supabase.from("appointments").insert({
+    patient_id: patientId,
+    practitioner_id: profile.id,
+    scheduled_at: scheduled.toISOString(),
+    duration_min: Number.parseInt(durationStr, 10) || 30,
+    location: location || null,
+    status: "scheduled",
+    reason,
+  });
+
+  revalidatePath(`/patients/${patientId}`);
+  revalidatePath("/agenda");
+}
+
 export async function resolveAlertAction(formData: FormData) {
   const { supabase } = await requirePractitioner();
   const alertId = String(formData.get("alert_id") ?? "");

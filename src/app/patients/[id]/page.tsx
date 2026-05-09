@@ -32,6 +32,7 @@ import {
   fmtRelative,
 } from "@/lib/labels";
 import { NewNoteForm } from "./new-note-form";
+import { NewAppointmentForm } from "./new-appointment-form";
 import { resolveAlertAction } from "./actions";
 
 export default async function PatientDetailPage(props: {
@@ -617,6 +618,7 @@ export default async function PatientDetailPage(props: {
             }
             title={`RDV à venir (${upcomingAppts.length})`}
           >
+            <NewAppointmentForm patientId={patientId} />
             {upcomingAppts.length === 0 ? (
               <p className="text-sm text-ink-muted">Aucun RDV programmé.</p>
             ) : (
