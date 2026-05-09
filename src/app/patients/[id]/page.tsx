@@ -41,6 +41,7 @@ import {
   RemoveAssignmentButton,
 } from "./add-practitioner";
 import { AIAudit } from "./ai-audit";
+import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { resolveAlertAction } from "./actions";
 
 export default async function PatientDetailPage(props: {
@@ -254,6 +255,17 @@ export default async function PatientDetailPage(props: {
 
   return (
     <AppShell profile={me} specialty={specialty}>
+      <RealtimeRefresh
+        tables={[
+          "alerts",
+          "tasks",
+          "notes",
+          "appointments",
+          "journey_steps",
+          "practitioner_assignments",
+        ]}
+        channel={`patient-${patientId}`}
+      />
       <Link
         href={"/patients" as never}
         className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-coral"

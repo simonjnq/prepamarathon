@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/app-shell";
+import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PractitionerDashboard } from "./practitioner-dashboard";
@@ -22,6 +23,10 @@ export default async function DashboardPage() {
 
   return (
     <AppShell profile={profile} specialty={specialty}>
+      <RealtimeRefresh
+        tables={["alerts", "tasks", "appointments"]}
+        channel={`dashboard-${profile.id}`}
+      />
       {isPractitioner ? (
         <PractitionerDashboard profile={profile} />
       ) : (

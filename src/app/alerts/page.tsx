@@ -10,6 +10,7 @@ import {
   fmtRelative,
   fmtDateTime,
 } from "@/lib/labels";
+import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { resolveAlertAction } from "../patients/[id]/actions";
 
 const SEVERITY_CHIPS: Array<{ value: string | null; label: string }> = [
@@ -94,6 +95,7 @@ export default async function AlertsPage(props: {
 
   return (
     <AppShell profile={profile} specialty={specialty}>
+      <RealtimeRefresh tables={["alerts"]} channel="alerts-feed" />
       <header>
         <p className="text-sm text-ink-muted">Vue alertes</p>
         <h1 className="mt-1 text-4xl font-extrabold tracking-tight">

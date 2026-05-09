@@ -1,6 +1,7 @@
 import { CheckCircle2, Circle, Sparkles } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Badge } from "@/components/badge";
+import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { requirePatient } from "@/lib/auth";
 import { TASK_SOURCE_LABELS, fmtRelative } from "@/lib/labels";
 import { toggleTaskAction } from "./actions";
@@ -32,6 +33,7 @@ export default async function MesTachesPage() {
 
   return (
     <AppShell profile={profile}>
+      <RealtimeRefresh tables={["tasks"]} channel="my-tasks" />
       <header>
         <p className="text-sm text-ink-muted">Vos actions</p>
         <h1 className="mt-1 text-4xl font-extrabold tracking-tight">
