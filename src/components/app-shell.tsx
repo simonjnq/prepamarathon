@@ -12,6 +12,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { logoutAction } from "@/app/login/actions";
 import { Avatar } from "@/components/avatar";
+import { BottomNav } from "@/components/bottom-nav";
 import { NavLink } from "@/components/nav-link";
 import type { SessionProfile } from "@/lib/auth";
 import { SPECIALTY_LABELS } from "@/lib/labels";
@@ -76,7 +77,12 @@ export function AppShell({
           </div>
         </div>
 
-        <nav className="flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-1 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:px-3 lg:pb-3">
+        {/* Mobile horizontal nav for praticien (no bottom bar). Hidden for patient (uses bottom bar). Always visible at lg+. */}
+        <nav
+          className={`gap-1 overflow-x-auto px-3 pb-3 lg:flex lg:flex-1 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:px-3 lg:pb-3 ${
+            isPractitioner ? "flex" : "hidden lg:flex"
+          }`}
+        >
           {nav.map((item) => (
             <NavLink key={item.href} {...item} />
           ))}
@@ -111,10 +117,17 @@ export function AppShell({
       </aside>
 
       <main className="flex-1 overflow-x-hidden bg-cream">
-        <div className="mx-auto max-w-280 px-5 py-8 sm:px-8 lg:px-10 lg:py-12">
+        <div
+          className={`mx-auto max-w-280 px-5 py-8 sm:px-8 lg:px-10 lg:py-12 ${
+            !isPractitioner ? "pb-24 lg:pb-12" : ""
+          }`}
+        >
           {children}
         </div>
       </main>
+
+      {/* Patient mobile bottom tab bar */}
+      {!isPractitioner && <BottomNav items={nav} />}
     </div>
   );
 }

@@ -41,6 +41,7 @@ import {
   RemoveAssignmentButton,
 } from "./add-practitioner";
 import { AIAudit } from "./ai-audit";
+import { RemindersSection, type Reminder } from "./reminders-section";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { resolveAlertAction } from "./actions";
 
@@ -209,6 +210,13 @@ export default async function PatientDetailPage(props: {
     .select("id, type, title, description, file_url, created_at, uploaded_by")
     .eq("patient_id", patientId)
     .order("created_at", { ascending: false });
+
+  const { data: reminderRows } = await supabase
+    .from("reminders")
+    .select("id, channel, message, scheduled_at, status, sent_at")
+    .eq("patient_id", patientId)
+    .order("scheduled_at", { ascending: true });
+  const reminders = (reminderRows ?? []) as unknown as Reminder[];
   const uploaderIds = Array.from(
     new Set(
       (docs ?? [])
@@ -613,6 +621,8 @@ export default async function PatientDetailPage(props: {
               candidates={practitionerCandidates}
             />
           </Section>
+
+          <RemindersSection patientId={patientId} reminders={reminders} />
 
           {/* Documents */}
           {docs && docs.length > 0 && (
