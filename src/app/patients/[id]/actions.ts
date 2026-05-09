@@ -147,6 +147,104 @@ export async function createAppointmentAction(formData: FormData) {
   revalidatePath("/mon-parcours");
 }
 
+export async function setStepStatusAction(formData: FormData) {
+  const { supabase } = await requirePractitioner();
+  const stepId = String(formData.get("step_id") ?? "");
+  const status = String(formData.get("status") ?? "") as
+    | "done"
+    | "in_progress"
+    | "upcoming";
+  const patientId = String(formData.get("patient_id") ?? "");
+  if (!stepId || !["done", "in_progress", "upcoming"].includes(status)) return;
+
+  await supabase
+    .from("journey_steps")
+    .update({
+      status,
+      completed_at: status === "done" ? new Date().toISOString() : null,
+    })
+    .eq("id", stepId);
+
+  if (patientId) revalidatePath(`/patients/${patientId}`);
+  revalidatePath("/mon-parcours");
+}
+
+export async function setAppointmentStatusAction(formData: FormData) {
+  const { supabase } = await requirePractitioner();
+  const apptId = String(formData.get("appointment_id") ?? "");
+  const status = String(formData.get("status") ?? "") as
+    | "completed"
+    | "cancelled"
+    | "no_show";
+  const patientId = String(formData.get("patient_id") ?? "");
+  const summary = String(formData.get("summary") ?? "").trim();
+  if (!apptId) return;
+
+  await supabase
+    .from("appointments")
+    .update({
+      status,
+      summary: summary || null,
+    })
+    .eq("id", apptId);
+
+  if (patientId) revalidatePath(`/patients/${patientId}`);
+  revalidatePath("/agenda");
+}
+
+export async function updateNoteAction(formData: FormData) {
+  const { supabase, profile } = await requirePractitioner();
+  const noteId = String(formData.get("note_id") ?? "");
+  const content = String(formData.get("content") ?? "").trim();
+  const patientId = String(formData.get("patient_id") ?? "");
+  if (!noteId || !content) return;
+
+  // Only the author can edit (extra safety on top of RLS).
+  await supabase
+    .from("notes")
+    .update({ content })
+    .eq("id", noteId)
+    .eq("practitioner_id", profile.id);
+
+  if (patientId) revalidatePath(`/patients/${patientId}`);
+}
+
+export async function addAssignmentAction(formData: FormData) {
+  const { supabase } = await requirePractitioner();
+  const patientId = String(formData.get("patient_id") ?? "");
+  const practitionerId = String(formData.get("practitioner_id") ?? "");
+  const role = String(formData.get("role") ?? "").trim();
+  if (!patientId || !practitionerId) return;
+
+  // Upsert via unique(patient_id, practitioner_id)
+  await supabase.from("practitioner_assignments").upsert(
+    {
+      patient_id: patientId,
+      practitioner_id: practitionerId,
+      role_in_journey: role || "Suivi en cours",
+      active: true,
+      started_at: new Date().toISOString().slice(0, 10),
+    },
+    { onConflict: "patient_id,practitioner_id" },
+  );
+
+  revalidatePath(`/patients/${patientId}`);
+}
+
+export async function removeAssignmentAction(formData: FormData) {
+  const { supabase } = await requirePractitioner();
+  const assignmentId = String(formData.get("assignment_id") ?? "");
+  const patientId = String(formData.get("patient_id") ?? "");
+  if (!assignmentId) return;
+
+  await supabase
+    .from("practitioner_assignments")
+    .update({ active: false })
+    .eq("id", assignmentId);
+
+  if (patientId) revalidatePath(`/patients/${patientId}`);
+}
+
 export async function resolveAlertAction(formData: FormData) {
   const { supabase } = await requirePractitioner();
   const alertId = String(formData.get("alert_id") ?? "");

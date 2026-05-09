@@ -33,6 +33,13 @@ import {
 } from "@/lib/labels";
 import { NewNoteForm } from "./new-note-form";
 import { NewAppointmentForm } from "./new-appointment-form";
+import { StepActions } from "./step-actions";
+import { NoteRow } from "./note-row";
+import { AppointmentActions } from "./appointment-actions";
+import {
+  AddPractitionerInline,
+  RemoveAssignmentButton,
+} from "./add-practitioner";
 import { resolveAlertAction } from "./actions";
 
 export default async function PatientDetailPage(props: {
@@ -115,7 +122,7 @@ export default async function PatientDetailPage(props: {
   const { data: notes } = await supabase
     .from("notes")
     .select(
-      "id, content, tags, created_at, practitioners(profiles(first_name, last_name), specialty)",
+      "id, content, tags, created_at, practitioner_id, practitioners(profiles(first_name, last_name), specialty)",
     )
     .eq("patient_id", patientId)
     .order("created_at", { ascending: false });
@@ -169,6 +176,26 @@ export default async function PatientDetailPage(props: {
     .eq("patient_id", patientId)
     .eq("active", true);
 
+  // All practitioners (for "Add to team" select). Filter out already-assigned.
+  const assignedIds = new Set(
+    (assignments ?? []).map((a) => a.practitioner_id),
+  );
+  const { data: allPractitioners } = await supabase
+    .from("practitioners")
+    .select("id, specialty, profiles(first_name, last_name)");
+  const practitionerCandidates = ((allPractitioners ?? []) as unknown as Array<{
+    id: string;
+    specialty: string;
+    profiles: { first_name: string; last_name: string } | null;
+  }>)
+    .filter((p) => !assignedIds.has(p.id) && p.profiles)
+    .map((p) => ({
+      id: p.id,
+      name: `${p.profiles!.first_name} ${p.profiles!.last_name}`,
+      specialty_label:
+        SPECIALTY_LABELS[p.specialty] ?? p.specialty,
+    }));
+
   const { data: qresps } = await supabase
     .from("questionnaire_responses")
     .select("section, question_label, answer_text")
@@ -216,6 +243,7 @@ export default async function PatientDetailPage(props: {
     content: string;
     tags: string[] | null;
     created_at: string;
+    practitioner_id: string;
     practitioners: {
       profiles: { first_name: string; last_name: string };
       specialty: string;
@@ -366,7 +394,12 @@ export default async function PatientDetailPage(props: {
             icon={<Clock size={18} strokeWidth={1.75} className="text-coral" />}
             title="Parcours"
           >
-            <Timeline steps={steps} />
+            <Timeline
+              steps={steps}
+              renderActions={(step) => (
+                <StepActions step={step} patientId={patientId} />
+              )}
+            />
           </Section>
 
           <Section
@@ -377,36 +410,12 @@ export default async function PatientDetailPage(props: {
             {typedNotes.length > 0 && (
               <ul className="mt-5 space-y-4">
                 {typedNotes.map((n) => (
-                  <li key={n.id} className="rounded-md border border-line p-4">
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <p className="font-bold text-sm">
-                        {n.practitioners.profiles.first_name}{" "}
-                        {n.practitioners.profiles.last_name}
-                        <span className="ml-2 text-xs font-normal text-ink-light">
-                          {SPECIALTY_LABELS[n.practitioners.specialty] ??
-                            n.practitioners.specialty}
-                        </span>
-                      </p>
-                      <p className="text-xs text-ink-light">
-                        {fmtRelative(n.created_at)}
-                      </p>
-                    </div>
-                    <p className="mt-2 whitespace-pre-line text-sm leading-relaxed">
-                      {n.content}
-                    </p>
-                    {n.tags && n.tags.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {n.tags.map((t) => (
-                          <span
-                            key={t}
-                            className="rounded-full bg-cream-soft px-2 py-0.5 text-[11px] font-medium text-ink-muted"
-                          >
-                            #{t}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </li>
+                  <NoteRow
+                    key={n.id}
+                    note={n}
+                    patientId={patientId}
+                    isAuthor={n.practitioner_id === me.id}
+                  />
                 ))}
               </ul>
             )}
@@ -573,10 +582,18 @@ export default async function PatientDetailPage(props: {
                         {SPECIALTY_LABELS[pp.specialty] ?? pp.specialty}
                       </p>
                     </div>
+                    <RemoveAssignmentButton
+                      assignmentId={a.id}
+                      patientId={patientId}
+                    />
                   </li>
                 );
               })}
             </ul>
+            <AddPractitionerInline
+              patientId={patientId}
+              candidates={practitionerCandidates}
+            />
           </Section>
 
           {/* Documents */}
@@ -645,6 +662,10 @@ export default async function PatientDetailPage(props: {
                         {pp.profiles.first_name} {pp.profiles.last_name} ·{" "}
                         {SPECIALTY_LABELS[pp.specialty] ?? pp.specialty}
                       </p>
+                      <AppointmentActions
+                        apptId={a.id}
+                        patientId={patientId}
+                      />
                     </li>
                   );
                 })}

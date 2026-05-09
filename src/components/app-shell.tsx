@@ -1,4 +1,3 @@
-import Link from "next/link";
 import {
   AlertTriangle,
   Calendar,
@@ -13,6 +12,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { logoutAction } from "@/app/login/actions";
 import { Avatar } from "@/components/avatar";
+import { NavLink } from "@/components/nav-link";
 import type { SessionProfile } from "@/lib/auth";
 import { SPECIALTY_LABELS } from "@/lib/labels";
 
@@ -77,15 +77,8 @@ export function AppShell({
         </div>
 
         <nav className="flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-1 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:px-3 lg:pb-3">
-          {nav.map(({ href, label, Icon }) => (
-            <Link
-              key={href}
-              href={href as never}
-              className="flex min-w-max items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium text-ink-muted transition-colors hover:bg-cream-soft hover:text-ink lg:min-w-0"
-            >
-              <Icon size={18} strokeWidth={1.75} />
-              <span className="whitespace-nowrap">{label}</span>
-            </Link>
+          {nav.map((item) => (
+            <NavLink key={item.href} {...item} />
           ))}
         </nav>
 

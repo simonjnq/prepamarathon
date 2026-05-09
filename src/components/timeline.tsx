@@ -17,7 +17,13 @@ export type TimelineStep = {
   practitioner_name?: string | null;
 };
 
-export function Timeline({ steps }: { steps: TimelineStep[] }) {
+export function Timeline({
+  steps,
+  renderActions,
+}: {
+  steps: TimelineStep[];
+  renderActions?: (step: TimelineStep) => React.ReactNode;
+}) {
   if (!steps.length) {
     return (
       <p className="text-sm text-ink-muted">
@@ -74,6 +80,11 @@ export function Timeline({ steps }: { steps: TimelineStep[] }) {
                   <span>· {step.practitioner_name}</span>
                 )}
               </div>
+              {renderActions && (
+                <div className="mt-3 flex flex-wrap gap-2 border-t border-line pt-3">
+                  {renderActions(step)}
+                </div>
+              )}
             </div>
           </li>
         );
