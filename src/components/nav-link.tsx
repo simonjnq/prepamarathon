@@ -2,16 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { LucideIcon } from "lucide-react";
+import { NavIcon, type NavIconName } from "./nav-icon";
 
 export function NavLink({
   href,
   label,
-  Icon,
+  iconName,
 }: {
   href: string;
   label: string;
-  Icon: LucideIcon;
+  iconName: NavIconName;
 }) {
   const pathname = usePathname();
   const active =
@@ -28,7 +28,7 @@ export function NavLink({
           : "text-ink-muted hover:bg-cream-soft hover:text-ink"
       }`}
     >
-      <Icon size={18} strokeWidth={1.75} />
+      <NavIcon name={iconName} size={18} strokeWidth={1.75} />
       <span className="whitespace-nowrap">{label}</span>
     </Link>
   );

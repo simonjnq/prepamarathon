@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { LucideIcon } from "lucide-react";
+import { NavIcon, type NavIconName } from "./nav-icon";
 
 export function BottomNav({
   items,
 }: {
-  items: Array<{ href: string; label: string; Icon: LucideIcon }>;
+  items: Array<{ href: string; label: string; iconName: NavIconName }>;
 }) {
   const pathname = usePathname();
   return (
@@ -15,7 +15,7 @@ export function BottomNav({
       className="fixed inset-x-0 bottom-0 z-30 flex border-t border-line bg-surface/95 backdrop-blur lg:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      {items.map(({ href, label, Icon }) => {
+      {items.map(({ href, label, iconName }) => {
         const active =
           href === "/dashboard"
             ? pathname === "/dashboard"
@@ -28,7 +28,11 @@ export function BottomNav({
               active ? "text-coral" : "text-ink-light"
             }`}
           >
-            <Icon size={20} strokeWidth={active ? 2 : 1.75} />
+            <NavIcon
+              name={iconName}
+              size={20}
+              strokeWidth={active ? 2 : 1.75}
+            />
             <span className="truncate">{label}</span>
           </Link>
         );

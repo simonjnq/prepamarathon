@@ -1,38 +1,28 @@
-import {
-  AlertTriangle,
-  Calendar,
-  CheckSquare,
-  ClipboardList,
-  FileText,
-  Footprints,
-  Home,
-  LogOut,
-  Users,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { logoutAction } from "@/app/login/actions";
 import { Avatar } from "@/components/avatar";
 import { BottomNav } from "@/components/bottom-nav";
 import { NavLink } from "@/components/nav-link";
+import type { NavIconName } from "@/components/nav-icon";
 import type { SessionProfile } from "@/lib/auth";
 import { SPECIALTY_LABELS } from "@/lib/labels";
 
-type NavItem = { href: string; label: string; Icon: LucideIcon };
+type NavItem = { href: string; label: string; iconName: NavIconName };
 
 const PRACTITIONER_NAV: NavItem[] = [
-  { href: "/dashboard", label: "Vue d'ensemble", Icon: Home },
-  { href: "/patients", label: "Patients", Icon: Users },
-  { href: "/alerts", label: "Alertes", Icon: AlertTriangle },
-  { href: "/agenda", label: "Mon agenda", Icon: Calendar },
+  { href: "/dashboard", label: "Vue d'ensemble", iconName: "home" },
+  { href: "/patients", label: "Patients", iconName: "users" },
+  { href: "/alerts", label: "Alertes", iconName: "alert" },
+  { href: "/agenda", label: "Mon agenda", iconName: "calendar" },
 ];
 
 const PATIENT_NAV: NavItem[] = [
-  { href: "/dashboard", label: "Accueil", Icon: Home },
-  { href: "/mon-parcours", label: "Mon parcours", Icon: Footprints },
-  { href: "/mes-rdv", label: "Mes rendez-vous", Icon: Calendar },
-  { href: "/mes-taches", label: "Mes tâches", Icon: CheckSquare },
-  { href: "/mes-documents", label: "Mes documents", Icon: FileText },
-  { href: "/mon-questionnaire", label: "Questionnaire", Icon: ClipboardList },
+  { href: "/dashboard", label: "Accueil", iconName: "home" },
+  { href: "/mon-parcours", label: "Mon parcours", iconName: "footprints" },
+  { href: "/mes-rdv", label: "Mes rendez-vous", iconName: "calendar" },
+  { href: "/mes-taches", label: "Mes tâches", iconName: "check" },
+  { href: "/mes-documents", label: "Mes documents", iconName: "file" },
+  { href: "/mon-questionnaire", label: "Questionnaire", iconName: "clipboard" },
 ];
 
 export function AppShell({
@@ -77,7 +67,6 @@ export function AppShell({
           </div>
         </div>
 
-        {/* Mobile horizontal nav for praticien (no bottom bar). Hidden for patient (uses bottom bar). Always visible at lg+. */}
         <nav
           className={`gap-1 overflow-x-auto px-3 pb-3 lg:flex lg:flex-1 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:px-3 lg:pb-3 ${
             isPractitioner ? "flex" : "hidden lg:flex"
@@ -126,7 +115,6 @@ export function AppShell({
         </div>
       </main>
 
-      {/* Patient mobile bottom tab bar */}
       {!isPractitioner && <BottomNav items={nav} />}
     </div>
   );
