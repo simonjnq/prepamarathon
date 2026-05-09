@@ -2,13 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { requirePractitioner } from "@/lib/auth";
-import { suggestTaskFromNote } from "@/lib/note-suggestions";
 
 export async function createNoteAction(formData: FormData) {
   const { supabase, profile } = await requirePractitioner();
   const patientId = String(formData.get("patient_id") ?? "");
   const content = String(formData.get("content") ?? "").trim();
-  const generateTaskFlag = formData.get("generate_task") === "on";
+  const selectedRaw = String(formData.get("selected_suggestions") ?? "[]");
+  const isAi = formData.get("ai_source") === "claude";
 
   if (!patientId || !content) return;
 
@@ -23,25 +23,36 @@ export async function createNoteAction(formData: FormData) {
     .single();
   if (error || !note) throw new Error(error?.message ?? "Note insert failed");
 
-  if (generateTaskFlag) {
-    const suggestion = suggestTaskFromNote(content);
-    if (suggestion) {
-      const due = new Date(
-        new Date("2026-05-09T10:00:00Z").getTime() +
-          suggestion.dueInDays * 86_400_000,
-      )
-        .toISOString()
-        .slice(0, 10);
-      await supabase.from("tasks").insert({
+  let selected: Array<{ title: string; dueInDays: number }> = [];
+  try {
+    const parsed = JSON.parse(selectedRaw);
+    if (Array.isArray(parsed)) {
+      selected = parsed
+        .filter(
+          (s) =>
+            typeof s?.title === "string" && typeof s?.dueInDays === "number",
+        )
+        .slice(0, 5);
+    }
+  } catch {
+    selected = [];
+  }
+
+  if (selected.length > 0) {
+    const today = new Date("2026-05-09T10:00:00Z").getTime();
+    await supabase.from("tasks").insert(
+      selected.map((s) => ({
         patient_id: patientId,
-        title: suggestion.title,
+        title: s.title,
         status: "pending",
-        source: "ai",
+        source: isAi ? "ai" : "practitioner",
         source_practitioner_id: profile.id,
         source_note_id: note.id,
-        due_at: due,
-      });
-    }
+        due_at: new Date(today + s.dueInDays * 86_400_000)
+          .toISOString()
+          .slice(0, 10),
+      })),
+    );
   }
 
   revalidatePath(`/patients/${patientId}`);
