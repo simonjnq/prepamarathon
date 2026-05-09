@@ -7,6 +7,7 @@ import {
   FileText,
   Footprints,
   Home,
+  LogOut,
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -58,12 +59,20 @@ export function AppShell({
               PrépaMarathon
             </p>
           </div>
-          <div className="lg:hidden">
+          <div className="flex items-center gap-2 lg:hidden">
             <Avatar
               firstName={profile.first_name}
               lastName={profile.last_name}
               size={36}
             />
+            <form action={logoutAction}>
+              <button
+                aria-label="Se déconnecter"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-line text-ink-muted hover:border-coral hover:text-coral"
+              >
+                <LogOut size={16} strokeWidth={1.75} />
+              </button>
+            </form>
           </div>
         </div>
 
@@ -72,7 +81,7 @@ export function AppShell({
             <Link
               key={href}
               href={href as never}
-              className="flex min-w-max items-center gap-3 rounded-[10px] px-3 py-2 text-sm font-medium text-ink-muted transition-colors hover:bg-cream-soft hover:text-ink lg:min-w-0"
+              className="flex min-w-max items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium text-ink-muted transition-colors hover:bg-cream-soft hover:text-ink lg:min-w-0"
             >
               <Icon size={18} strokeWidth={1.75} />
               <span className="whitespace-nowrap">{label}</span>
@@ -101,7 +110,7 @@ export function AppShell({
             </div>
           </div>
           <form action={logoutAction} className="mt-3">
-            <button className="w-full rounded-[10px] border border-line bg-surface-warm px-3 py-2 text-xs font-bold text-ink-muted hover:border-coral hover:text-coral">
+            <button className="w-full rounded-sm border border-line bg-surface-warm px-3 py-2 text-xs font-bold text-ink-muted hover:border-coral hover:text-coral">
               Se déconnecter
             </button>
           </form>
@@ -109,7 +118,7 @@ export function AppShell({
       </aside>
 
       <main className="flex-1 overflow-x-hidden bg-cream">
-        <div className="mx-auto max-w-[1120px] px-5 py-8 sm:px-8 lg:px-10 lg:py-12">
+        <div className="mx-auto max-w-280 px-5 py-8 sm:px-8 lg:px-10 lg:py-12">
           {children}
         </div>
       </main>

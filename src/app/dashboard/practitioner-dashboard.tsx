@@ -168,7 +168,7 @@ export async function PractitionerDashboard({
                   <li key={a.id}>
                     <Link
                       href={`/patients/${a.patient_id}` as never}
-                      className="group flex items-start gap-4 rounded-[14px] border border-line bg-surface-warm p-4 transition-colors hover:border-coral"
+                      className="group flex items-start gap-4 rounded-md border border-line bg-surface-warm p-4 transition-colors hover:border-coral"
                     >
                       <Avatar
                         firstName={patientProfile?.first_name}

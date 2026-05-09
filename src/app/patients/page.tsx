@@ -186,7 +186,7 @@ export default async function PatientsListPage(props: {
         <form
           action="/patients"
           method="GET"
-          className="flex w-full max-w-md items-center gap-2 rounded-[12px] border border-line bg-surface px-3 py-2 focus-within:border-coral"
+          className="flex w-full max-w-md items-center gap-2 rounded-sm border border-line bg-surface px-3 py-2 focus-within:border-coral"
         >
           <Search size={18} strokeWidth={1.75} className="text-ink-light" />
           <input

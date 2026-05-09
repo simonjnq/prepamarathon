@@ -47,7 +47,7 @@ export function Timeline({ steps }: { steps: TimelineStep[] }) {
               className={`absolute -left-[26px] top-1.5 inline-block h-4 w-4 rounded-full ${dotClass}`}
               aria-hidden
             />
-            <div className="rounded-[14px] border border-line bg-surface px-4 py-3 shadow-soft">
+            <div className="rounded-md border border-line bg-surface px-4 py-3 shadow-soft">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold uppercase tracking-wider text-ink-light">

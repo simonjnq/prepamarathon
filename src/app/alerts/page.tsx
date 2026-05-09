@@ -219,7 +219,7 @@ export default async function AlertsPage(props: {
                     <form action={resolveAlertAction} className="shrink-0">
                       <input type="hidden" name="alert_id" value={a.id} />
                       <input type="hidden" name="patient_id" value={a.patient_id} />
-                      <button className="btn-secondary !px-3 !py-1.5 !text-xs">
+                      <button className="btn-secondary px-3! py-1.5! text-xs!">
                         Marquer résolue
                       </button>
                     </form>
