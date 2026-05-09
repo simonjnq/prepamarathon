@@ -32,7 +32,14 @@ export function Timeline({
     );
   }
 
-  const sorted = [...steps].sort((a, b) => a.order_idx - b.order_idx);
+  // Trier chronologiquement par date prévue (les étapes sans date partent
+  // à la fin), avec order_idx comme départage en cas d'égalité de date.
+  const sorted = [...steps].sort((a, b) => {
+    const aDate = a.scheduled_at ?? "9999-12-31";
+    const bDate = b.scheduled_at ?? "9999-12-31";
+    if (aDate !== bDate) return aDate.localeCompare(bDate);
+    return a.order_idx - b.order_idx;
+  });
 
   return (
     <ol className="relative pl-7">
