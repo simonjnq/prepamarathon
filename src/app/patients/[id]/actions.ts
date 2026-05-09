@@ -58,6 +58,17 @@ export async function createNoteAction(formData: FormData) {
   revalidatePath(`/patients/${patientId}`);
 }
 
+const SPECIALTY_TO_STEP_CATEGORY: Record<string, string> = {
+  medecin_du_sport: "medical",
+  kinesitherapeute: "kine",
+  osteopathe: "osteo",
+  nutritionniste: "nutrition",
+  podologue: "podologie",
+  cardiologue: "cardio",
+  psychologue: "mental",
+  coach: "training",
+};
+
 export async function createAppointmentAction(formData: FormData) {
   const { supabase, profile } = await requirePractitioner();
   const patientId = String(formData.get("patient_id") ?? "");
@@ -72,18 +83,68 @@ export async function createAppointmentAction(formData: FormData) {
   const scheduled = new Date(`${date}T${time}:00`);
   if (Number.isNaN(scheduled.getTime())) return;
 
-  await supabase.from("appointments").insert({
-    patient_id: patientId,
-    practitioner_id: profile.id,
-    scheduled_at: scheduled.toISOString(),
-    duration_min: Number.parseInt(durationStr, 10) || 30,
-    location: location || null,
-    status: "scheduled",
-    reason,
-  });
+  const { data: appt, error: apptErr } = await supabase
+    .from("appointments")
+    .insert({
+      patient_id: patientId,
+      practitioner_id: profile.id,
+      scheduled_at: scheduled.toISOString(),
+      duration_min: Number.parseInt(durationStr, 10) || 30,
+      location: location || null,
+      status: "scheduled",
+      reason,
+    })
+    .select("id")
+    .single();
+  if (apptErr || !appt) {
+    throw new Error(apptErr?.message ?? "Appointment insert failed");
+  }
+
+  // Reflect the appointment as an upcoming step in the patient's active journey.
+  const { data: journey } = await supabase
+    .from("journeys")
+    .select("id")
+    .eq("patient_id", patientId)
+    .eq("status", "active")
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (journey) {
+    const { data: maxStep } = await supabase
+      .from("journey_steps")
+      .select("order_idx")
+      .eq("journey_id", journey.id)
+      .order("order_idx", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const nextOrder = (maxStep?.order_idx ?? 0) + 1;
+
+    const { data: practitionerRow } = await supabase
+      .from("practitioners")
+      .select("specialty")
+      .eq("id", profile.id)
+      .maybeSingle();
+    const category =
+      SPECIALTY_TO_STEP_CATEGORY[practitionerRow?.specialty ?? ""] ?? "medical";
+
+    await supabase.from("journey_steps").insert({
+      journey_id: journey.id,
+      order_idx: nextOrder,
+      title: reason,
+      description: `Rendez-vous avec ${profile.first_name} ${profile.last_name}${
+        location ? ` — ${location}` : ""
+      }`,
+      category,
+      status: "upcoming",
+      practitioner_id: profile.id,
+      scheduled_at: date,
+    });
+  }
 
   revalidatePath(`/patients/${patientId}`);
   revalidatePath("/agenda");
+  revalidatePath("/mon-parcours");
 }
 
 export async function resolveAlertAction(formData: FormData) {
