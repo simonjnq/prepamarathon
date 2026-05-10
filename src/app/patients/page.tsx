@@ -20,7 +20,7 @@ const GOAL_CHIPS: Array<{ value: string | null; label: string }> = [
   { value: "reprise", label: "Reprise" },
 ];
 
-type Search = { q?: string; goal?: string; alerts?: string };
+type Search = { q?: string; goal?: string; alerts?: string; pain?: string };
 
 export default async function PatientsListPage(props: {
   searchParams: Promise<Search>;
@@ -38,6 +38,7 @@ export default async function PatientsListPage(props: {
   const q = (sp.q ?? "").trim().toLowerCase();
   const goal = sp.goal ?? null;
   const onlyWithAlerts = sp.alerts === "1";
+  const onlyWithPain = sp.pain === "1";
 
   // Fetch patients + their profile + their journeys (3 queries — split avoids
   // PostgREST embed ambiguity when patients.id is both PK and FK to profiles.id).
@@ -106,6 +107,21 @@ export default async function PatientsListPage(props: {
     alertCount.set(a.patient_id, cur);
   });
 
+  // Patients ayant une douleur active (pain_points sans resolved_on)
+  const { data: painRows } = await supabase
+    .from("pain_points")
+    .select("patient_id, body_zone, severity")
+    .is("resolved_on", null);
+  const painsByPatient = new Map<
+    string,
+    Array<{ body_zone: string; severity: number | null }>
+  >();
+  (painRows ?? []).forEach((p) => {
+    const arr = painsByPatient.get(p.patient_id) ?? [];
+    arr.push({ body_zone: p.body_zone, severity: p.severity });
+    painsByPatient.set(p.patient_id, arr);
+  });
+
 
   // Next appointment per patient with THIS practitioner
   const nowIso = new Date("2026-05-09T10:00:00Z").toISOString();
@@ -133,6 +149,8 @@ export default async function PatientsListPage(props: {
     if (goal && p.activeJourney?.sport_goal !== goal) return false;
     if (onlyWithAlerts && (alertCount.get(p.id)?.total ?? 0) === 0)
       return false;
+    if (onlyWithPain && (painsByPatient.get(p.id)?.length ?? 0) === 0)
+      return false;
     return true;
   });
 
@@ -147,22 +165,27 @@ export default async function PatientsListPage(props: {
     return ad.localeCompare(bd);
   });
 
-  function chipHref(value: string | null): string {
+  function buildHref(overrides: Partial<Search> = {}): string {
+    const cur: Search = {
+      q: q || undefined,
+      goal: goal ?? undefined,
+      alerts: onlyWithAlerts ? "1" : undefined,
+      pain: onlyWithPain ? "1" : undefined,
+      ...overrides,
+    };
     const u = new URLSearchParams();
-    if (value) u.set("goal", value);
-    if (q) u.set("q", q);
-    if (onlyWithAlerts) u.set("alerts", "1");
+    if (cur.q) u.set("q", cur.q);
+    if (cur.goal) u.set("goal", cur.goal);
+    if (cur.alerts) u.set("alerts", cur.alerts);
+    if (cur.pain) u.set("pain", cur.pain);
     const s = u.toString();
     return s ? `/patients?${s}` : "/patients";
   }
-  function alertsToggleHref(): string {
-    const u = new URLSearchParams();
-    if (goal) u.set("goal", goal);
-    if (q) u.set("q", q);
-    if (!onlyWithAlerts) u.set("alerts", "1");
-    const s = u.toString();
-    return s ? `/patients?${s}` : "/patients";
-  }
+  const chipHref = (value: string | null) => buildHref({ goal: value ?? undefined });
+  const alertsToggleHref = () =>
+    buildHref({ alerts: onlyWithAlerts ? undefined : "1" });
+  const painToggleHref = () =>
+    buildHref({ pain: onlyWithPain ? undefined : "1" });
 
   return (
     <AppShell profile={profile} specialty={specialty}>
@@ -180,6 +203,7 @@ export default async function PatientsListPage(props: {
           {q && ` correspondent à « ${q} »`}
           {goal && ` · ${SPORT_GOAL_LABELS[goal]}`}
           {onlyWithAlerts && " · avec alertes ouvertes"}
+          {onlyWithPain && " · avec douleur active"}
         </p>
       </header>
 
@@ -230,6 +254,16 @@ export default async function PatientsListPage(props: {
             <AlertTriangle size={13} strokeWidth={2} />
             Avec alertes
           </Link>
+          <Link
+            href={painToggleHref() as never}
+            className={`rounded-full border px-3.5 py-1.5 text-xs font-bold transition-colors ${
+              onlyWithPain
+                ? "border-coral bg-coral-bg text-coral"
+                : "border-line bg-surface text-ink-muted hover:border-coral hover:text-coral"
+            }`}
+          >
+            Avec douleur active
+          </Link>
         </div>
       </section>
 
@@ -245,6 +279,7 @@ export default async function PatientsListPage(props: {
             const alerts = alertCount.get(p.id);
             const next = nextAppt.get(p.id);
             const age = ageFromDob(p.date_of_birth);
+            const pains = painsByPatient.get(p.id) ?? [];
             return (
               <Link
                 key={p.id}
@@ -311,6 +346,15 @@ export default async function PatientsListPage(props: {
                   ) : (
                     <Badge variant="leaf" className="shrink-0">
                       OK
+                    </Badge>
+                  )}
+                  {pains.length > 0 && (
+                    <Badge variant="amber" className="shrink-0">
+                      Douleur :{" "}
+                      {pains
+                        .map((p) => p.body_zone)
+                        .slice(0, 2)
+                        .join(" + ")}
                     </Badge>
                   )}
                   {next ? (
