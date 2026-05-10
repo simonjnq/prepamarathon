@@ -32,10 +32,24 @@ export async function PractitionerDashboard({
     .eq("practitioner_id", profile.id)
     .eq("active", true);
 
-  const { count: openAlertsTotal } = await supabase
-    .from("alerts")
-    .select("id", { count: "exact", head: true })
-    .is("resolved_at", null);
+  // Defense-in-depth : on ne fait pas que confier la sécurité à RLS,
+  // on filtre explicitement aux patients assignés au praticien.
+  const { data: myAssignmentRows } = await supabase
+    .from("practitioner_assignments")
+    .select("patient_id")
+    .eq("practitioner_id", profile.id)
+    .eq("active", true);
+  const myPatientIds = (myAssignmentRows ?? []).map((r) => r.patient_id);
+
+  const openAlertsQuery =
+    myPatientIds.length === 0
+      ? { count: 0 }
+      : await supabase
+          .from("alerts")
+          .select("id", { count: "exact", head: true })
+          .is("resolved_at", null)
+          .in("patient_id", myPatientIds);
+  const openAlertsTotal = openAlertsQuery.count ?? 0;
 
   const todayStart = new Date("2026-05-09T00:00:00Z").toISOString();
   const todayEnd = new Date("2026-05-09T23:59:59Z").toISOString();
@@ -47,16 +61,23 @@ export async function PractitionerDashboard({
     .gte("scheduled_at", todayStart)
     .lte("scheduled_at", todayEnd);
 
-  // Top open alerts (across patients I follow if any, else all — for demo we show all)
-  const { data: alerts } = await supabase
-    .from("alerts")
-    .select(
-      "id, severity, title, message, created_at, patient_id, patients!inner(profiles!inner(first_name, last_name))",
-    )
-    .is("resolved_at", null)
-    .order("severity", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(5);
+  // Alertes ouvertes restreintes explicitement aux patients assignés
+  // (RLS gère déjà ce filtre, mais defense-in-depth).
+  const alerts =
+    myPatientIds.length === 0
+      ? []
+      : ((
+          await supabase
+            .from("alerts")
+            .select(
+              "id, severity, title, message, created_at, patient_id, patients!inner(profiles!inner(first_name, last_name))",
+            )
+            .is("resolved_at", null)
+            .in("patient_id", myPatientIds)
+            .order("severity", { ascending: false })
+            .order("created_at", { ascending: false })
+            .limit(5)
+        ).data ?? []);
 
   // Today's appointments for this practitioner
   const { data: todayAppts } = await supabase

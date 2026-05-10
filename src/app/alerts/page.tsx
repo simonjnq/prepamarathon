@@ -38,18 +38,29 @@ export default async function AlertsPage(props: {
   const severity = sp.severity ?? null;
   const showResolved = sp.show === "all";
 
-  let query = supabase
-    .from("alerts")
-    .select(
-      "id, severity, title, message, source, created_at, resolved_at, patient_id, patients!inner(profiles!inner(first_name, last_name), occupation)",
-    )
-    .order("severity", { ascending: false })
-    .order("created_at", { ascending: false });
+  // Defense-in-depth : limiter explicitement aux patients assignés
+  const { data: myAssignmentRows } = await supabase
+    .from("practitioner_assignments")
+    .select("patient_id")
+    .eq("practitioner_id", profile.id)
+    .eq("active", true);
+  const myPatientIds = (myAssignmentRows ?? []).map((r) => r.patient_id);
 
-  if (!showResolved) query = query.is("resolved_at", null);
-  if (severity) query = query.eq("severity", severity);
-
-  const { data: alerts } = await query;
+  let alerts: unknown[] | null = [];
+  if (myPatientIds.length > 0) {
+    let query = supabase
+      .from("alerts")
+      .select(
+        "id, severity, title, message, source, created_at, resolved_at, patient_id, patients!inner(profiles!inner(first_name, last_name), occupation)",
+      )
+      .in("patient_id", myPatientIds)
+      .order("severity", { ascending: false })
+      .order("created_at", { ascending: false });
+    if (!showResolved) query = query.is("resolved_at", null);
+    if (severity) query = query.eq("severity", severity);
+    const r = await query;
+    alerts = r.data;
+  }
 
   type AlertRow = {
     id: string;
@@ -82,16 +93,24 @@ export default async function AlertsPage(props: {
     return s ? `/alerts?${s}` : "/alerts";
   }
 
-  // Counts for header
-  const { count: openCount } = await supabase
-    .from("alerts")
-    .select("id", { count: "exact", head: true })
-    .is("resolved_at", null);
-  const { count: urgentCount } = await supabase
-    .from("alerts")
-    .select("id", { count: "exact", head: true })
-    .is("resolved_at", null)
-    .eq("severity", "urgent");
+  // Counts for header (eux aussi restreints aux assignés)
+  let openCount = 0;
+  let urgentCount = 0;
+  if (myPatientIds.length > 0) {
+    const { count: o } = await supabase
+      .from("alerts")
+      .select("id", { count: "exact", head: true })
+      .is("resolved_at", null)
+      .in("patient_id", myPatientIds);
+    openCount = o ?? 0;
+    const { count: u } = await supabase
+      .from("alerts")
+      .select("id", { count: "exact", head: true })
+      .is("resolved_at", null)
+      .eq("severity", "urgent")
+      .in("patient_id", myPatientIds);
+    urgentCount = u ?? 0;
+  }
 
   return (
     <AppShell profile={profile} specialty={specialty}>
@@ -105,13 +124,13 @@ export default async function AlertsPage(props: {
           </span>
         </h1>
         <p className="mt-2 text-ink-muted">
-          {openCount ?? 0} alerte{(openCount ?? 0) > 1 ? "s" : ""} ouverte
-          {(openCount ?? 0) > 1 ? "s" : ""}
-          {(urgentCount ?? 0) > 0 && (
+          {openCount} alerte{openCount > 1 ? "s" : ""} ouverte
+          {openCount > 1 ? "s" : ""} sur vos patients
+          {urgentCount > 0 && (
             <>
               {" "}
               · <span className="font-bold text-rust">{urgentCount} urgent
-              {(urgentCount ?? 0) > 1 ? "es" : "e"}</span>
+              {urgentCount > 1 ? "es" : "e"}</span>
             </>
           )}
         </p>
