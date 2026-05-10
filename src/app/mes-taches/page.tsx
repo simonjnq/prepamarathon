@@ -3,7 +3,13 @@ import { AppShell } from "@/components/app-shell";
 import { Badge } from "@/components/badge";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { requirePatient } from "@/lib/auth";
-import { TASK_SOURCE_LABELS, fmtRelative } from "@/lib/labels";
+import {
+  TASK_PRIORITY_LABELS,
+  TASK_PRIORITY_RANK,
+  TASK_PRIORITY_VARIANT,
+  TASK_SOURCE_LABELS,
+  fmtRelative,
+} from "@/lib/labels";
 import { toggleTaskAction } from "./actions";
 
 type TaskRow = {
@@ -12,6 +18,7 @@ type TaskRow = {
   description: string | null;
   status: string;
   source: string;
+  priority: string;
   due_at: string | null;
   completed_at: string | null;
 };
@@ -21,15 +28,23 @@ export default async function MesTachesPage() {
 
   const { data: tasks } = await supabase
     .from("tasks")
-    .select("id, title, description, status, source, due_at, completed_at, created_at")
-    .eq("patient_id", profile.id)
-    .order("status", { ascending: true })
-    .order("due_at", { ascending: true, nullsFirst: false });
+    .select(
+      "id, title, description, status, source, priority, due_at, completed_at, created_at",
+    )
+    .eq("patient_id", profile.id);
 
-  const open = ((tasks ?? []) as TaskRow[]).filter(
-    (t) => t.status !== "done",
-  );
-  const done = ((tasks ?? []) as TaskRow[]).filter((t) => t.status === "done");
+  const all = (tasks ?? []) as TaskRow[];
+  // Tri : priorité d'abord, puis échéance
+  all.sort((a, b) => {
+    const pa = TASK_PRIORITY_RANK[a.priority] ?? 2;
+    const pb = TASK_PRIORITY_RANK[b.priority] ?? 2;
+    if (pa !== pb) return pa - pb;
+    const da = a.due_at ?? "9999-12-31";
+    const db = b.due_at ?? "9999-12-31";
+    return da.localeCompare(db);
+  });
+  const open = all.filter((t) => t.status !== "done");
+  const done = all.filter((t) => t.status === "done");
 
   return (
     <AppShell profile={profile}>
@@ -73,7 +88,14 @@ export default async function MesTachesPage() {
                     </button>
                   </form>
                   <div className="min-w-0 flex-1">
-                    <p className="font-bold">{t.title}</p>
+                    <div className="flex flex-wrap items-baseline gap-2">
+                      {(t.priority === "urgent" || t.priority === "high") && (
+                        <Badge variant={TASK_PRIORITY_VARIANT[t.priority]}>
+                          {TASK_PRIORITY_LABELS[t.priority]}
+                        </Badge>
+                      )}
+                      <p className="font-bold">{t.title}</p>
+                    </div>
                     {t.description && (
                       <p className="mt-1 text-sm text-ink-muted">
                         {t.description}

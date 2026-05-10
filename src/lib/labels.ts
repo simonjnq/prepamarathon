@@ -63,6 +63,30 @@ export const ALERT_SEVERITY_LABELS: Record<string, string> = {
   urgent: "Urgent",
 };
 
+export const TASK_PRIORITY_LABELS: Record<string, string> = {
+  low: "Bonus",
+  normal: "Normale",
+  high: "Importante",
+  urgent: "Urgente",
+};
+
+export const TASK_PRIORITY_RANK: Record<string, number> = {
+  urgent: 0,
+  high: 1,
+  normal: 2,
+  low: 3,
+};
+
+export const TASK_PRIORITY_VARIANT: Record<
+  string,
+  "rust" | "coral" | "neutral" | "soft"
+> = {
+  urgent: "rust",
+  high: "coral",
+  normal: "neutral",
+  low: "soft",
+};
+
 export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   ordonnance: "Ordonnance",
   compte_rendu: "Compte rendu",
