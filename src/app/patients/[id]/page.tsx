@@ -74,7 +74,9 @@ export default async function PatientDetailPage(props: {
       .select(
         `id, date_of_birth, gender, height_cm, weight_kg, occupation,
          allergies, medications, blood_type, emergency_contact_name,
-         emergency_contact_phone, notes`,
+         emergency_contact_phone, notes,
+         resting_hr, max_hr, vma, target_pace, last_ecg_date,
+         surgical_history, vaccinations`,
       )
       .eq("id", patientId)
       .maybeSingle(),
@@ -694,6 +696,14 @@ export default async function PatientDetailPage(props: {
                 value={patient.medications ?? "Aucun"}
               />
               <Field
+                label="ATCD chirurgicaux"
+                value={patient.surgical_history ?? "Aucun"}
+              />
+              <Field
+                label="Vaccinations"
+                value={patient.vaccinations ?? "—"}
+              />
+              <Field
                 label="Contact urgence"
                 value={
                   patient.emergency_contact_name
@@ -707,6 +717,63 @@ export default async function PatientDetailPage(props: {
               />
             </dl>
           </Section>
+
+          {/* Performance / suivi sport */}
+          {(patient.resting_hr ||
+            patient.max_hr ||
+            patient.vma ||
+            patient.target_pace ||
+            patient.last_ecg_date) && (
+            <Section
+              icon={
+                <Stethoscope
+                  size={18}
+                  strokeWidth={1.75}
+                  className="text-coral"
+                />
+              }
+              title="Performance & cardio"
+            >
+              <dl className="grid grid-cols-2 gap-3 text-sm">
+                {patient.resting_hr != null && (
+                  <Field
+                    label="FC repos"
+                    value={`${patient.resting_hr} bpm`}
+                  />
+                )}
+                {patient.max_hr != null && (
+                  <Field
+                    label="FC max"
+                    value={`${patient.max_hr} bpm`}
+                  />
+                )}
+                {patient.vma != null && (
+                  <Field label="VMA" value={`${patient.vma} km/h`} />
+                )}
+                {patient.target_pace && (
+                  <Field
+                    label="Allure cible"
+                    value={`${patient.target_pace} min/km`}
+                  />
+                )}
+                {patient.last_ecg_date && (
+                  <Field
+                    label="Dernier ECG"
+                    value={fmtDateLong(patient.last_ecg_date)}
+                  />
+                )}
+                {patient.height_cm && patient.weight_kg && (
+                  <Field
+                    label="IMC"
+                    value={`${(
+                      Number(patient.weight_kg) /
+                      ((patient.height_cm / 100) ** 2)
+                    ).toFixed(1)}`}
+                  />
+                )}
+              </dl>
+            </Section>
+          )}
 
           {/* Practitioner team */}
           <Section
