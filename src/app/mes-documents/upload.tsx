@@ -36,12 +36,11 @@ export function PatientUpload({ patientId }: { patientId: string }) {
         .from("documents")
         .upload(path, file, { upsert: false });
       if (upErr) throw upErr;
-      const { data } = supabase.storage.from("documents").getPublicUrl(path);
 
       const fd = new FormData();
       fd.append("type", type);
       fd.append("title", title.trim());
-      fd.append("file_url", data.publicUrl);
+      fd.append("file_url", path);
       await addPatientDocumentAction(fd);
 
       setFile(null);

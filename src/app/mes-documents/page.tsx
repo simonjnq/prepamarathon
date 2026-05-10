@@ -3,6 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { DocumentCard } from "@/components/document-card";
 import { requirePatient } from "@/lib/auth";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/labels";
+import { generateDocumentSignedUrls } from "@/lib/storage";
 import { PatientUpload } from "./upload";
 
 const TYPE_ORDER = [
@@ -39,12 +40,26 @@ export default async function MesDocumentsPage() {
     );
   }
 
+  // Storage privé : générer signed URLs pour les paths
+  const paths = (docs ?? [])
+    .map((d) => d.file_url)
+    .filter((p): p is string => !!p);
+  const signedByPath = await generateDocumentSignedUrls(supabase, paths);
+  const docsWithUrls = (docs ?? []).map((d) => ({
+    ...d,
+    file_url: d.file_url
+      ? d.file_url.startsWith("http")
+        ? d.file_url
+        : signedByPath.get(d.file_url) ?? null
+      : null,
+  }));
+
   // Group by type
-  const grouped = new Map<string, typeof docs>();
-  (docs ?? []).forEach((d) => {
+  const grouped = new Map<string, typeof docsWithUrls>();
+  docsWithUrls.forEach((d) => {
     const arr = grouped.get(d.type) ?? [];
-    arr!.push(d);
-    grouped.set(d.type, arr as typeof docs);
+    arr.push(d);
+    grouped.set(d.type, arr);
   });
   const sortedKeys = Array.from(grouped.keys()).sort((a, b) => {
     const ai = TYPE_ORDER.indexOf(a);

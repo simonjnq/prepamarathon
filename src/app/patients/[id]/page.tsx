@@ -49,6 +49,7 @@ import {
   type AppointmentDoc,
 } from "./appointment-notes-panel";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
+import { generateDocumentSignedUrls } from "@/lib/storage";
 import { resolveAlertAction } from "./actions";
 
 export default async function PatientDetailPage(props: {
@@ -218,8 +219,22 @@ export default async function PatientDetailPage(props: {
     )
     .eq("patient_id", patientId)
     .order("created_at", { ascending: false });
+  // Storage privé : générer signed URLs pour les paths
+  const docPaths = (docs ?? [])
+    .map((d) => d.file_url)
+    .filter((p): p is string => !!p);
+  const signedByPath = await generateDocumentSignedUrls(supabase, docPaths);
+  const docsResolved = (docs ?? []).map((d) => ({
+    ...d,
+    file_url: d.file_url
+      ? d.file_url.startsWith("http")
+        ? d.file_url
+        : signedByPath.get(d.file_url) ?? null
+      : null,
+  }));
+
   const docsByAppt = new Map<string, AppointmentDoc[]>();
-  (docs ?? []).forEach((d) => {
+  docsResolved.forEach((d) => {
     if (!d.appointment_id) return;
     const arr = docsByAppt.get(d.appointment_id) ?? [];
     arr.push({
@@ -712,18 +727,18 @@ export default async function PatientDetailPage(props: {
                 className="text-coral"
               />
             }
-            title={`Documents (${docs?.length ?? 0})`}
+            title={`Documents (${docsResolved.length})`}
           >
             <div className="mb-3">
               <UploadDocument patientId={patientId} />
             </div>
-            {!docs || docs.length === 0 ? (
+            {docsResolved.length === 0 ? (
               <p className="text-sm text-ink-muted">
                 Aucun document pour l&apos;instant.
               </p>
             ) : (
               <div className="space-y-3">
-                {docs.slice(0, 5).map((d) => (
+                {docsResolved.slice(0, 5).map((d) => (
                   <DocumentCard
                     key={d.id}
                     doc={d}
@@ -733,9 +748,10 @@ export default async function PatientDetailPage(props: {
                     compact
                   />
                 ))}
-                {docs.length > 5 && (
+                {docsResolved.length > 5 && (
                   <p className="text-xs text-ink-light">
-                    + {docs.length - 5} autre{docs.length - 5 > 1 ? "s" : ""}
+                    + {docsResolved.length - 5} autre
+                    {docsResolved.length - 5 > 1 ? "s" : ""}
                   </p>
                 )}
               </div>
