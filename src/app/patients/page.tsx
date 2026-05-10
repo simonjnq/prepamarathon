@@ -226,44 +226,117 @@ export default async function PatientsListPage(props: {
           {onlyWithAlerts && <input type="hidden" name="alerts" value="1" />}
         </form>
 
-        <div className="flex flex-wrap gap-2">
-          {GOAL_CHIPS.map((c) => {
-            const active = (c.value ?? null) === (goal ?? null);
-            return (
-              <Link
-                key={c.label}
-                href={chipHref(c.value) as never}
-                className={`rounded-full border px-3.5 py-1.5 text-xs font-bold transition-colors ${
-                  active
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+          {/* Groupe 1 : segmented control 'Parcours' (single-select) */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-ink-light">
+              Parcours
+            </span>
+            <div className="inline-flex overflow-hidden rounded-full border border-line bg-surface">
+              {GOAL_CHIPS.map((c) => {
+                const active = (c.value ?? null) === (goal ?? null);
+                return (
+                  <Link
+                    key={c.label}
+                    href={chipHref(c.value) as never}
+                    className={`px-3.5 py-1.5 text-xs font-bold transition-colors ${
+                      active
+                        ? "bg-coral text-white"
+                        : "text-ink-muted hover:bg-cream-soft hover:text-coral"
+                    }`}
+                  >
+                    {c.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Séparateur visuel */}
+          <span
+            aria-hidden
+            className="hidden h-6 w-px bg-line lg:inline-block"
+          />
+
+          {/* Groupe 2 : toggles indépendants (multi-select) */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-ink-light">
+              Filtres
+            </span>
+            <Link
+              href={alertsToggleHref() as never}
+              className={`inline-flex items-center gap-1.5 rounded-md border-2 border-dashed px-3 py-1.5 text-xs font-bold transition-colors ${
+                onlyWithAlerts
+                  ? "border-coral bg-coral-bg text-coral"
+                  : "border-line bg-surface text-ink-muted hover:border-coral hover:text-coral"
+              }`}
+            >
+              <span
+                className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm border ${
+                  onlyWithAlerts
                     ? "border-coral bg-coral text-white"
-                    : "border-line bg-surface text-ink-muted hover:border-coral hover:text-coral"
+                    : "border-line"
                 }`}
+                aria-hidden
               >
-                {c.label}
-              </Link>
-            );
-          })}
-          <Link
-            href={alertsToggleHref() as never}
-            className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition-colors ${
-              onlyWithAlerts
-                ? "border-coral bg-coral-bg text-coral"
-                : "border-line bg-surface text-ink-muted hover:border-coral hover:text-coral"
-            }`}
-          >
-            <AlertTriangle size={13} strokeWidth={2} />
-            Avec alertes
-          </Link>
-          <Link
-            href={painToggleHref() as never}
-            className={`rounded-full border px-3.5 py-1.5 text-xs font-bold transition-colors ${
-              onlyWithPain
-                ? "border-coral bg-coral-bg text-coral"
-                : "border-line bg-surface text-ink-muted hover:border-coral hover:text-coral"
-            }`}
-          >
-            Avec douleur active
-          </Link>
+                {onlyWithAlerts && (
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 10 10"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M2 5l2 2 4-4"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                )}
+              </span>
+              <AlertTriangle size={12} strokeWidth={2} />
+              Avec alertes
+            </Link>
+            <Link
+              href={painToggleHref() as never}
+              className={`inline-flex items-center gap-1.5 rounded-md border-2 border-dashed px-3 py-1.5 text-xs font-bold transition-colors ${
+                onlyWithPain
+                  ? "border-coral bg-coral-bg text-coral"
+                  : "border-line bg-surface text-ink-muted hover:border-coral hover:text-coral"
+              }`}
+            >
+              <span
+                className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm border ${
+                  onlyWithPain
+                    ? "border-coral bg-coral text-white"
+                    : "border-line"
+                }`}
+                aria-hidden
+              >
+                {onlyWithPain && (
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 10 10"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M2 5l2 2 4-4"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                )}
+              </span>
+              Avec douleur active
+            </Link>
+          </div>
         </div>
       </section>
 
