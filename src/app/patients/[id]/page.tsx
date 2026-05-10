@@ -43,6 +43,7 @@ import {
 import { AIAudit } from "./ai-audit";
 import { RemindersSection, type Reminder } from "./reminders-section";
 import { UploadDocument } from "./upload-document";
+import { CaseDiscussion, type CaseMessage } from "./case-discussion";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { resolveAlertAction } from "./actions";
 
@@ -218,6 +219,52 @@ export default async function PatientDetailPage(props: {
     .eq("patient_id", patientId)
     .order("scheduled_at", { ascending: true });
   const reminders = (reminderRows ?? []) as unknown as Reminder[];
+
+  // Team discussion (case messages)
+  const isAssigned = (assignments ?? []).some(
+    (a) => a.practitioner_id === me.id,
+  );
+  let messages: CaseMessage[] = [];
+  if (isAssigned) {
+    const { data: msgRows } = await supabase
+      .from("case_messages")
+      .select("id, sender_id, content, created_at")
+      .eq("patient_id", patientId)
+      .order("created_at", { ascending: true });
+    const senderIds = Array.from(
+      new Set((msgRows ?? []).map((m) => m.sender_id)),
+    );
+    const senderById = new Map<
+      string,
+      { first_name: string; last_name: string; specialty: string }
+    >();
+    if (senderIds.length > 0) {
+      const { data: profileRows } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name")
+        .in("id", senderIds);
+      const { data: prRows } = await supabase
+        .from("practitioners")
+        .select("id, specialty")
+        .in("id", senderIds);
+      const specialtyById = new Map<string, string>();
+      (prRows ?? []).forEach((p) => specialtyById.set(p.id, p.specialty));
+      (profileRows ?? []).forEach((p) => {
+        senderById.set(p.id, {
+          first_name: p.first_name,
+          last_name: p.last_name,
+          specialty: specialtyById.get(p.id) ?? "",
+        });
+      });
+    }
+    messages = (msgRows ?? []).map((m) => ({
+      id: m.id,
+      sender_id: m.sender_id,
+      content: m.content,
+      created_at: m.created_at,
+      sender: senderById.get(m.sender_id) ?? null,
+    }));
+  }
   const uploaderIds = Array.from(
     new Set(
       (docs ?? [])
@@ -272,6 +319,7 @@ export default async function PatientDetailPage(props: {
           "appointments",
           "journey_steps",
           "practitioner_assignments",
+          "case_messages",
         ]}
         channel={`patient-${patientId}`}
       />
@@ -369,6 +417,16 @@ export default async function PatientDetailPage(props: {
       {/* AI audit (full width) */}
       <div className="mt-7">
         <AIAudit patientId={patientId} />
+      </div>
+
+      {/* Team discussion (full width) */}
+      <div className="mt-6">
+        <CaseDiscussion
+          patientId={patientId}
+          messages={messages}
+          currentUserId={me.id}
+          isAssigned={isAssigned}
+        />
       </div>
 
       {/* Two-column layout */}

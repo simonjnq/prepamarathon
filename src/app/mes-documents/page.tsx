@@ -3,6 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { DocumentCard } from "@/components/document-card";
 import { requirePatient } from "@/lib/auth";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/labels";
+import { PatientUpload } from "./upload";
 
 const TYPE_ORDER = [
   "ordonnance",
@@ -67,12 +68,16 @@ export default async function MesDocumentsPage() {
         </p>
       </header>
 
+      <div className="mt-7">
+        <PatientUpload patientId={profile.id} />
+      </div>
+
       {!docs || docs.length === 0 ? (
-        <div className="card mt-7 flex flex-col items-center gap-3 p-10 text-center">
+        <div className="card mt-5 flex flex-col items-center gap-3 p-10 text-center">
           <FileText size={32} strokeWidth={1.5} className="text-ink-light" />
           <p className="text-ink-muted">
             Aucun document pour l&apos;instant. Votre praticien vous en
-            transmettra ici.
+            transmettra ici, et vous pouvez aussi en téléverser vous-même.
           </p>
         </div>
       ) : (
