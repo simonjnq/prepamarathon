@@ -1,31 +1,48 @@
-import { AlertTriangle, Heart, Pill } from "lucide-react";
+import { AlertTriangle, Flame, Heart, Pill } from "lucide-react";
 
 /**
  * Ruban d'alertes santé affiché en haut de la fiche patient.
  * Surface immédiatement les informations qu'un praticien doit voir
- * sans scroller : allergies, traitements en cours, alertes critiques.
+ * sans scroller : allergies, traitements en cours, alertes critiques,
+ * et badge 'Patient à risque' si plusieurs urgentes ouvertes (D3).
  */
 export function HealthRibbon({
   allergies,
   medications,
   bloodType,
   hasUrgentAlert,
+  urgentAlertCount = 0,
 }: {
   allergies?: string | null;
   medications?: string | null;
   bloodType?: string | null;
   hasUrgentAlert?: boolean;
+  urgentAlertCount?: number;
 }) {
   const hasAllergies =
     allergies && allergies.trim() !== "" && !/aucune?/i.test(allergies);
   const hasMeds =
     medications && medications.trim() !== "" && !/aucun/i.test(medications);
+  const isAtRisk = urgentAlertCount >= 2;
 
-  if (!hasAllergies && !hasMeds && !hasUrgentAlert && !bloodType) return null;
+  if (
+    !hasAllergies &&
+    !hasMeds &&
+    !hasUrgentAlert &&
+    !bloodType &&
+    !isAtRisk
+  )
+    return null;
 
   return (
     <div className="sticky top-0 z-20 -mx-5 mb-5 flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-line bg-cream/95 px-5 py-3 text-sm shadow-sm backdrop-blur sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
-      {hasUrgentAlert && (
+      {isAtRisk && (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-rust px-2.5 py-1 font-bold text-white">
+          <Flame size={14} strokeWidth={2.5} />
+          Patient à risque · {urgentAlertCount} alertes urgentes
+        </span>
+      )}
+      {hasUrgentAlert && !isAtRisk && (
         <span className="inline-flex items-center gap-1.5 rounded-full bg-rust-bg px-2.5 py-1 font-bold text-rust">
           <AlertTriangle size={14} strokeWidth={2.5} />
           Alerte urgente ouverte

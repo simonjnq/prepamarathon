@@ -401,6 +401,9 @@ export default async function PatientDetailPage(props: {
         medications={patient.medications}
         bloodType={patient.blood_type}
         hasUrgentAlert={openAlerts.some((a) => a.severity === "urgent")}
+        urgentAlertCount={
+          openAlerts.filter((a) => a.severity === "urgent").length
+        }
       />
 
       <div className="flex items-center justify-between gap-3">
