@@ -2,13 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import { requirePatient } from "@/lib/auth";
+import { Schemas, field } from "@/lib/validation";
 
 export async function addPatientDocumentAction(formData: FormData) {
   const { supabase, profile } = await requirePatient();
-  const type = String(formData.get("type") ?? "autre");
-  const title = String(formData.get("title") ?? "").trim();
-  const description = String(formData.get("description") ?? "").trim();
-  const fileUrl = String(formData.get("file_url") ?? "").trim();
+  const type = field(formData, "type", Schemas.documentType) ?? "autre";
+  const title = field(formData, "title", Schemas.documentTitle);
+  const description =
+    field(formData, "description", Schemas.documentDescription) ?? "";
+  const rawFileUrl = String(formData.get("file_url") ?? "")
+    .trim()
+    .slice(0, 1000);
   if (!title) return;
 
   await supabase.from("documents").insert({
@@ -17,7 +21,7 @@ export async function addPatientDocumentAction(formData: FormData) {
     type,
     title,
     description: description || null,
-    file_url: fileUrl || null,
+    file_url: rawFileUrl || null,
   });
 
   revalidatePath("/mes-documents");

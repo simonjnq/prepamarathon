@@ -2,14 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { requirePractitioner } from "@/lib/auth";
+import { Schemas, field } from "@/lib/validation";
 
 export async function createReminderAction(formData: FormData) {
   const { supabase, profile } = await requirePractitioner();
-  const patientId = String(formData.get("patient_id") ?? "");
-  const channel = String(formData.get("channel") ?? "");
-  const date = String(formData.get("date") ?? "");
-  const time = String(formData.get("time") ?? "");
-  const message = String(formData.get("message") ?? "").trim();
+  const patientId = field(formData, "patient_id", Schemas.uuid);
+  const channel = field(formData, "channel", Schemas.reminderChannel);
+  const date = field(formData, "date", Schemas.date);
+  const time = field(formData, "time", Schemas.time);
+  const message = field(formData, "message", Schemas.reminderMessage);
   if (!patientId || !channel || !date || !time || !message) return;
 
   const scheduled = new Date(`${date}T${time}:00`);
@@ -29,8 +30,8 @@ export async function createReminderAction(formData: FormData) {
 
 export async function markReminderSentAction(formData: FormData) {
   const { supabase } = await requirePractitioner();
-  const reminderId = String(formData.get("reminder_id") ?? "");
-  const patientId = String(formData.get("patient_id") ?? "");
+  const reminderId = field(formData, "reminder_id", Schemas.uuid);
+  const patientId = field(formData, "patient_id", Schemas.optUuid);
   if (!reminderId) return;
   await supabase
     .from("reminders")
@@ -41,8 +42,8 @@ export async function markReminderSentAction(formData: FormData) {
 
 export async function cancelReminderAction(formData: FormData) {
   const { supabase } = await requirePractitioner();
-  const reminderId = String(formData.get("reminder_id") ?? "");
-  const patientId = String(formData.get("patient_id") ?? "");
+  const reminderId = field(formData, "reminder_id", Schemas.uuid);
+  const patientId = field(formData, "patient_id", Schemas.optUuid);
   if (!reminderId) return;
   await supabase
     .from("reminders")

@@ -1,24 +1,29 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { requirePractitioner } from "@/lib/auth";
+import { Schemas, field, stripHtml } from "@/lib/validation";
+
+const SuggestionsSchema = z.array(
+  z.object({
+    title: z.string().min(1).max(200),
+    dueInDays: z.number().int().min(0).max(365),
+  }),
+);
 
 export async function createNoteAction(formData: FormData) {
   const { supabase, profile } = await requirePractitioner();
-  const patientId = String(formData.get("patient_id") ?? "");
-  const content = String(formData.get("content") ?? "").trim();
-  const selectedRaw = String(formData.get("selected_suggestions") ?? "[]");
+  const patientId = field(formData, "patient_id", Schemas.uuid);
+  const content = field(formData, "content", Schemas.noteContent);
   const isAi = formData.get("ai_source") === "gemini";
+  const selectedRaw = String(formData.get("selected_suggestions") ?? "[]");
 
   if (!patientId || !content) return;
 
   const { data: note, error } = await supabase
     .from("notes")
-    .insert({
-      patient_id: patientId,
-      practitioner_id: profile.id,
-      content,
-    })
+    .insert({ patient_id: patientId, practitioner_id: profile.id, content })
     .select("id")
     .single();
   if (error || !note) throw new Error(error?.message ?? "Note insert failed");
@@ -26,14 +31,8 @@ export async function createNoteAction(formData: FormData) {
   let selected: Array<{ title: string; dueInDays: number }> = [];
   try {
     const parsed = JSON.parse(selectedRaw);
-    if (Array.isArray(parsed)) {
-      selected = parsed
-        .filter(
-          (s) =>
-            typeof s?.title === "string" && typeof s?.dueInDays === "number",
-        )
-        .slice(0, 5);
-    }
+    const r = SuggestionsSchema.safeParse(parsed);
+    if (r.success) selected = r.data.slice(0, 5);
   } catch {
     selected = [];
   }
@@ -43,7 +42,7 @@ export async function createNoteAction(formData: FormData) {
     await supabase.from("tasks").insert(
       selected.map((s) => ({
         patient_id: patientId,
-        title: s.title,
+        title: stripHtml(s.title).trim().slice(0, 200),
         status: "pending",
         source: isAi ? "ai" : "practitioner",
         source_practitioner_id: profile.id,
@@ -71,12 +70,12 @@ const SPECIALTY_TO_STEP_CATEGORY: Record<string, string> = {
 
 export async function createAppointmentAction(formData: FormData) {
   const { supabase, profile } = await requirePractitioner();
-  const patientId = String(formData.get("patient_id") ?? "");
-  const date = String(formData.get("date") ?? "");
-  const time = String(formData.get("time") ?? "");
-  const durationStr = String(formData.get("duration") ?? "30");
-  const location = String(formData.get("location") ?? "").trim();
-  const reason = String(formData.get("reason") ?? "").trim();
+  const patientId = field(formData, "patient_id", Schemas.uuid);
+  const date = field(formData, "date", Schemas.date);
+  const time = field(formData, "time", Schemas.time);
+  const duration = field(formData, "duration", Schemas.duration) ?? 30;
+  const location = field(formData, "location", Schemas.apptLocation) ?? "";
+  const reason = field(formData, "reason", Schemas.apptReason);
 
   if (!patientId || !date || !time || !reason) return;
 
@@ -89,7 +88,7 @@ export async function createAppointmentAction(formData: FormData) {
       patient_id: patientId,
       practitioner_id: profile.id,
       scheduled_at: scheduled.toISOString(),
-      duration_min: Number.parseInt(durationStr, 10) || 30,
+      duration_min: duration,
       location: location || null,
       status: "scheduled",
       reason,
@@ -149,13 +148,10 @@ export async function createAppointmentAction(formData: FormData) {
 
 export async function setStepStatusAction(formData: FormData) {
   const { supabase } = await requirePractitioner();
-  const stepId = String(formData.get("step_id") ?? "");
-  const status = String(formData.get("status") ?? "") as
-    | "done"
-    | "in_progress"
-    | "upcoming";
-  const patientId = String(formData.get("patient_id") ?? "");
-  if (!stepId || !["done", "in_progress", "upcoming"].includes(status)) return;
+  const stepId = field(formData, "step_id", Schemas.uuid);
+  const status = field(formData, "status", Schemas.stepStatus);
+  const patientId = field(formData, "patient_id", Schemas.optUuid);
+  if (!stepId || !status) return;
 
   await supabase
     .from("journey_steps")
@@ -171,21 +167,15 @@ export async function setStepStatusAction(formData: FormData) {
 
 export async function setAppointmentStatusAction(formData: FormData) {
   const { supabase } = await requirePractitioner();
-  const apptId = String(formData.get("appointment_id") ?? "");
-  const status = String(formData.get("status") ?? "") as
-    | "completed"
-    | "cancelled"
-    | "no_show";
-  const patientId = String(formData.get("patient_id") ?? "");
-  const summary = String(formData.get("summary") ?? "").trim();
-  if (!apptId) return;
+  const apptId = field(formData, "appointment_id", Schemas.uuid);
+  const status = field(formData, "status", Schemas.appointmentStatus);
+  const patientId = field(formData, "patient_id", Schemas.optUuid);
+  const summary = field(formData, "summary", Schemas.apptSummary) ?? "";
+  if (!apptId || !status) return;
 
   await supabase
     .from("appointments")
-    .update({
-      status,
-      summary: summary || null,
-    })
+    .update({ status, summary: summary || null })
     .eq("id", apptId);
 
   if (patientId) revalidatePath(`/patients/${patientId}`);
@@ -194,12 +184,11 @@ export async function setAppointmentStatusAction(formData: FormData) {
 
 export async function updateNoteAction(formData: FormData) {
   const { supabase, profile } = await requirePractitioner();
-  const noteId = String(formData.get("note_id") ?? "");
-  const content = String(formData.get("content") ?? "").trim();
-  const patientId = String(formData.get("patient_id") ?? "");
+  const noteId = field(formData, "note_id", Schemas.uuid);
+  const content = field(formData, "content", Schemas.noteContent);
+  const patientId = field(formData, "patient_id", Schemas.optUuid);
   if (!noteId || !content) return;
 
-  // Only the author can edit (extra safety on top of RLS).
   await supabase
     .from("notes")
     .update({ content })
@@ -211,12 +200,11 @@ export async function updateNoteAction(formData: FormData) {
 
 export async function addAssignmentAction(formData: FormData) {
   const { supabase } = await requirePractitioner();
-  const patientId = String(formData.get("patient_id") ?? "");
-  const practitionerId = String(formData.get("practitioner_id") ?? "");
-  const role = String(formData.get("role") ?? "").trim();
+  const patientId = field(formData, "patient_id", Schemas.uuid);
+  const practitionerId = field(formData, "practitioner_id", Schemas.uuid);
+  const role = field(formData, "role", Schemas.documentDescription) ?? "";
   if (!patientId || !practitionerId) return;
 
-  // Upsert via unique(patient_id, practitioner_id)
   await supabase.from("practitioner_assignments").upsert(
     {
       patient_id: patientId,
@@ -233,8 +221,8 @@ export async function addAssignmentAction(formData: FormData) {
 
 export async function removeAssignmentAction(formData: FormData) {
   const { supabase } = await requirePractitioner();
-  const assignmentId = String(formData.get("assignment_id") ?? "");
-  const patientId = String(formData.get("patient_id") ?? "");
+  const assignmentId = field(formData, "assignment_id", Schemas.uuid);
+  const patientId = field(formData, "patient_id", Schemas.optUuid);
   if (!assignmentId) return;
 
   await supabase
@@ -247,12 +235,15 @@ export async function removeAssignmentAction(formData: FormData) {
 
 export async function addDocumentRowAction(formData: FormData) {
   const { supabase, profile } = await requirePractitioner();
-  const patientId = String(formData.get("patient_id") ?? "");
-  const type = String(formData.get("type") ?? "autre");
-  const title = String(formData.get("title") ?? "").trim();
-  const description = String(formData.get("description") ?? "").trim();
-  const fileUrl = String(formData.get("file_url") ?? "").trim();
-  const appointmentId = String(formData.get("appointment_id") ?? "");
+  const patientId = field(formData, "patient_id", Schemas.uuid);
+  const type = field(formData, "type", Schemas.documentType) ?? "autre";
+  const title = field(formData, "title", Schemas.documentTitle);
+  const description =
+    field(formData, "description", Schemas.documentDescription) ?? "";
+  // file_url stocke un path Storage ou (legacy) une URL — pas de strict
+  // validation, juste cap longueur.
+  const rawFileUrl = String(formData.get("file_url") ?? "").trim().slice(0, 1000);
+  const appointmentId = field(formData, "appointment_id", Schemas.optUuid);
   if (!patientId || !title) return;
 
   await supabase.from("documents").insert({
@@ -261,7 +252,7 @@ export async function addDocumentRowAction(formData: FormData) {
     type,
     title,
     description: description || null,
-    file_url: fileUrl || null,
+    file_url: rawFileUrl || null,
     appointment_id: appointmentId || null,
   });
 
@@ -271,9 +262,9 @@ export async function addDocumentRowAction(formData: FormData) {
 
 export async function updateAppointmentNoteAction(formData: FormData) {
   const { supabase } = await requirePractitioner();
-  const apptId = String(formData.get("appointment_id") ?? "");
-  const patientId = String(formData.get("patient_id") ?? "");
-  const summary = String(formData.get("summary") ?? "").trim();
+  const apptId = field(formData, "appointment_id", Schemas.uuid);
+  const patientId = field(formData, "patient_id", Schemas.optUuid);
+  const summary = field(formData, "summary", Schemas.apptSummary) ?? "";
   if (!apptId) return;
   await supabase
     .from("appointments")
@@ -284,8 +275,8 @@ export async function updateAppointmentNoteAction(formData: FormData) {
 
 export async function resolveAlertAction(formData: FormData) {
   const { supabase } = await requirePractitioner();
-  const alertId = String(formData.get("alert_id") ?? "");
-  const patientId = String(formData.get("patient_id") ?? "");
+  const alertId = field(formData, "alert_id", Schemas.uuid);
+  const patientId = field(formData, "patient_id", Schemas.optUuid);
   if (!alertId) return;
   await supabase
     .from("alerts")

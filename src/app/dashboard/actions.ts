@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requirePatient } from "@/lib/auth";
+import { Schemas, field } from "@/lib/validation";
 
 const SEVERITY_BY_CATEGORY: Record<string, "info" | "warning" | "urgent"> = {
   pain_increase: "urgent",
@@ -21,8 +22,8 @@ const TITLE_BY_CATEGORY: Record<string, string> = {
 
 export async function flagFromPatientAction(formData: FormData) {
   const { supabase, profile } = await requirePatient();
-  const category = String(formData.get("category") ?? "other");
-  const message = String(formData.get("message") ?? "").trim();
+  const category = field(formData, "category", Schemas.flagCategory) ?? "other";
+  const message = field(formData, "message", Schemas.flagMessage) ?? "";
 
   const severity = SEVERITY_BY_CATEGORY[category] ?? "info";
   const title = TITLE_BY_CATEGORY[category] ?? TITLE_BY_CATEGORY.other;

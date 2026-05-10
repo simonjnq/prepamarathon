@@ -2,10 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { requirePatient } from "@/lib/auth";
+import { Schemas, field } from "@/lib/validation";
 
 export async function toggleTaskAction(formData: FormData) {
   const { supabase, profile } = await requirePatient();
-  const taskId = String(formData.get("task_id") ?? "");
+  const taskId = field(formData, "task_id", Schemas.uuid);
   const markDone = formData.get("mark_done") === "1";
   if (!taskId) return;
 
