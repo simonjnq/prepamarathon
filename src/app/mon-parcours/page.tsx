@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/app-shell";
 import { Timeline, type TimelineStep } from "@/components/timeline";
 import { requirePatient } from "@/lib/auth";
+import { weeksToRace } from "@/lib/journey";
 import { SPORT_GOAL_LABELS, fmtDateLong } from "@/lib/labels";
 
 export default async function MonParcoursPage() {
@@ -76,15 +77,18 @@ export default async function MonParcoursPage() {
               <h2 className="mt-1 text-2xl font-extrabold">
                 {journey.race_name}
               </h2>
-              {journey.weeks_to_race != null && (
-                <p className="mt-1 text-sm text-ink-muted">
-                  Plus que{" "}
-                  <span className="font-bold text-ink">
-                    {journey.weeks_to_race} semaines
-                  </span>{" "}
-                  avant le départ.
-                </p>
-              )}
+              {(() => {
+                const w = weeksToRace(journey.race_date, journey.weeks_to_race);
+                return w != null && w >= 0 ? (
+                  <p className="mt-1 text-sm text-ink-muted">
+                    Plus que{" "}
+                    <span className="font-bold text-ink">
+                      {w} semaines
+                    </span>{" "}
+                    avant le départ.
+                  </p>
+                ) : null;
+              })()}
             </div>
             <div className="grid grid-cols-3 divide-x divide-line">
               <Stat label="Réalisées" value={doneCount} tone="leaf" />

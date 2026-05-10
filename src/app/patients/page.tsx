@@ -11,6 +11,11 @@ import {
   fmtDateShort,
   fmtRelative,
 } from "@/lib/labels";
+import {
+  priorityScore,
+  priorityLabel,
+  weeksToRace,
+} from "@/lib/journey";
 
 const GOAL_CHIPS: Array<{ value: string | null; label: string }> = [
   { value: null, label: "Tous" },
@@ -94,16 +99,23 @@ export default async function PatientsListPage(props: {
     };
   });
 
-  // Alert counts per patient
+  // Alert counts per patient (par sévérité, pour le score)
   const { data: alertRows } = await supabase
     .from("alerts")
     .select("patient_id, severity")
     .is("resolved_at", null);
-  const alertCount = new Map<string, { total: number; urgent: number }>();
+  const alertCount = new Map<
+    string,
+    { total: number; urgent: number; warning: number; info: number }
+  >();
   (alertRows ?? []).forEach((a) => {
-    const cur = alertCount.get(a.patient_id) ?? { total: 0, urgent: 0 };
+    const cur =
+      alertCount.get(a.patient_id) ??
+      { total: 0, urgent: 0, warning: 0, info: 0 };
     cur.total += 1;
     if (a.severity === "urgent") cur.urgent += 1;
+    else if (a.severity === "warning") cur.warning += 1;
+    else cur.info += 1;
     alertCount.set(a.patient_id, cur);
   });
 
@@ -120,6 +132,19 @@ export default async function PatientsListPage(props: {
     const arr = painsByPatient.get(p.patient_id) ?? [];
     arr.push({ body_zone: p.body_zone, severity: p.severity });
     painsByPatient.set(p.patient_id, arr);
+  });
+
+  // Dernier RDV par patient (pour calcul jours-depuis-dernier-RDV dans le score)
+  const today = new Date("2026-05-10T10:00:00Z");
+  const { data: lastApptRows } = await supabase
+    .from("appointments")
+    .select("patient_id, scheduled_at, status")
+    .lte("scheduled_at", today.toISOString())
+    .order("scheduled_at", { ascending: false });
+  const lastApptByPatient = new Map<string, string>();
+  (lastApptRows ?? []).forEach((a) => {
+    if (!lastApptByPatient.has(a.patient_id))
+      lastApptByPatient.set(a.patient_id, a.scheduled_at);
   });
 
 
@@ -154,12 +179,47 @@ export default async function PatientsListPage(props: {
     return true;
   });
 
-  // Sort: alerts urgent first, then total alerts, then race_date asc
+  // Calcul du score de priorité par patient
+  function computeScore(p: typeof filtered[number]): number {
+    const ac = alertCount.get(p.id) ?? {
+      urgent: 0,
+      warning: 0,
+      info: 0,
+      total: 0,
+    };
+    const pains = painsByPatient.get(p.id) ?? [];
+    const maxPain = pains.reduce(
+      (m, x) => Math.max(m, x.severity ?? 0),
+      0,
+    );
+    const last = lastApptByPatient.get(p.id);
+    const daysSince = last
+      ? Math.round(
+          (today.getTime() - new Date(last).getTime()) / 86_400_000,
+        )
+      : null;
+    const w = weeksToRace(
+      p.activeJourney?.race_date ?? null,
+      p.activeJourney?.weeks_to_race ?? null,
+    );
+    return priorityScore({
+      alertsUrgent: ac.urgent,
+      alertsWarning: ac.warning,
+      alertsInfo: ac.info,
+      maxActivePainSeverity: maxPain,
+      daysSinceLastAppointment: daysSince,
+      weeksToRace: w,
+    });
+  }
+  const scoreById = new Map<string, number>(
+    filtered.map((p) => [p.id, computeScore(p)]),
+  );
+
+  // Tri par score de priorité décroissant, puis race_date croissante
   filtered.sort((a, b) => {
-    const ac = alertCount.get(a.id) ?? { total: 0, urgent: 0 };
-    const bc = alertCount.get(b.id) ?? { total: 0, urgent: 0 };
-    if (ac.urgent !== bc.urgent) return bc.urgent - ac.urgent;
-    if (ac.total !== bc.total) return bc.total - ac.total;
+    const sa = scoreById.get(a.id) ?? 0;
+    const sb = scoreById.get(b.id) ?? 0;
+    if (sa !== sb) return sb - sa;
     const ad = a.activeJourney?.race_date ?? "9999";
     const bd = b.activeJourney?.race_date ?? "9999";
     return ad.localeCompare(bd);
@@ -353,6 +413,8 @@ export default async function PatientsListPage(props: {
             const next = nextAppt.get(p.id);
             const age = ageFromDob(p.date_of_birth);
             const pains = painsByPatient.get(p.id) ?? [];
+            const score = scoreById.get(p.id) ?? 0;
+            const priority = priorityLabel(score);
             return (
               <Link
                 key={p.id}
@@ -409,17 +471,16 @@ export default async function PatientsListPage(props: {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 sm:w-56 sm:shrink-0 sm:flex-col sm:items-end sm:gap-2">
-                  {alerts && alerts.total > 0 ? (
-                    <Badge
-                      variant={alerts.urgent > 0 ? "rust" : "amber"}
-                      className="shrink-0"
-                    >
+                  <Badge variant={priority.variant} className="shrink-0">
+                    {priority.label}
+                  </Badge>
+                  {alerts && alerts.total > 0 && (
+                    <span className="text-xs text-ink-muted">
                       {alerts.total} alerte{alerts.total > 1 ? "s" : ""}
-                    </Badge>
-                  ) : (
-                    <Badge variant="leaf" className="shrink-0">
-                      OK
-                    </Badge>
+                      {alerts.urgent > 0 && (
+                        <span className="text-rust"> · {alerts.urgent} urgent{alerts.urgent > 1 ? "es" : "e"}</span>
+                      )}
+                    </span>
                   )}
                   {pains.length > 0 && (
                     <Badge variant="amber" className="shrink-0">

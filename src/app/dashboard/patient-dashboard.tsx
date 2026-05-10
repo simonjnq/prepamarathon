@@ -6,6 +6,7 @@ import {
   Footprints,
 } from "lucide-react";
 import { PatientFlag } from "./patient-flag";
+import { weeksToRace } from "@/lib/journey";
 import { Badge, statusBadgeVariant } from "@/components/badge";
 import type { SessionProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -181,16 +182,19 @@ export async function PatientDashboard({
                 {SPORT_GOAL_LABELS[journey.sport_goal] ?? journey.sport_goal}
                 {journey.race_date &&
                   ` · ${fmtDateLong(journey.race_date)}`}
-                {journey.weeks_to_race != null && (
-                  <>
-                    {" "}
-                    ·{" "}
-                    <span className="font-bold text-ink">
-                      {journey.weeks_to_race} sem.
-                    </span>{" "}
-                    avant
-                  </>
-                )}
+                {(() => {
+                  const w = weeksToRace(journey.race_date, journey.weeks_to_race);
+                  return w != null && w >= 0 ? (
+                    <>
+                      {" "}
+                      ·{" "}
+                      <span className="font-bold text-ink">
+                        {w} sem.
+                      </span>{" "}
+                      avant
+                    </>
+                  ) : null;
+                })()}
               </p>
               <div className="mt-5">
                 <div className="flex items-baseline justify-between">

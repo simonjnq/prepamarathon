@@ -45,6 +45,7 @@ import { RemindersSection, type Reminder } from "./reminders-section";
 import { UploadDocument } from "./upload-document";
 import { HealthRibbon } from "@/components/health-ribbon";
 import { PrintButton } from "@/components/print-button";
+import { weeksToRace } from "@/lib/journey";
 import { CaseDiscussion, type CaseMessage } from "./case-discussion";
 import {
   AppointmentNotesPanel,
@@ -458,8 +459,12 @@ export default async function PatientDetailPage(props: {
             <p className="text-xs font-bold uppercase tracking-wider text-coral">
               {SPORT_GOAL_LABELS[journey.sport_goal] ?? journey.sport_goal}
               {journey.race_date && ` · ${fmtDateLong(journey.race_date)}`}
-              {journey.weeks_to_race != null &&
-                ` · ${journey.weeks_to_race} semaines avant la course`}
+              {(() => {
+                const w = weeksToRace(journey.race_date, journey.weeks_to_race);
+                return w != null && w >= 0
+                  ? ` · ${w} semaines avant la course`
+                  : "";
+              })()}
             </p>
             <h2 className="mt-1 text-2xl font-extrabold">
               {journey.race_name}
