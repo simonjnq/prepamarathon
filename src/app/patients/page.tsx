@@ -20,7 +20,7 @@ const GOAL_CHIPS: Array<{ value: string | null; label: string }> = [
   { value: "reprise", label: "Reprise" },
 ];
 
-type Search = { q?: string; goal?: string; alerts?: string; mine?: string };
+type Search = { q?: string; goal?: string; alerts?: string };
 
 export default async function PatientsListPage(props: {
   searchParams: Promise<Search>;
@@ -38,7 +38,6 @@ export default async function PatientsListPage(props: {
   const q = (sp.q ?? "").trim().toLowerCase();
   const goal = sp.goal ?? null;
   const onlyWithAlerts = sp.alerts === "1";
-  const onlyMine = sp.mine === "1";
 
   // Fetch patients + their profile + their journeys (3 queries — split avoids
   // PostgREST embed ambiguity when patients.id is both PK and FK to profiles.id).
@@ -107,15 +106,6 @@ export default async function PatientsListPage(props: {
     alertCount.set(a.patient_id, cur);
   });
 
-  // Patients assigned to ME (active)
-  const { data: myAssignments } = await supabase
-    .from("practitioner_assignments")
-    .select("patient_id")
-    .eq("practitioner_id", profile.id)
-    .eq("active", true);
-  const myPatientIds = new Set(
-    (myAssignments ?? []).map((r) => r.patient_id),
-  );
 
   // Next appointment per patient with THIS practitioner
   const nowIso = new Date("2026-05-09T10:00:00Z").toISOString();
@@ -135,7 +125,7 @@ export default async function PatientsListPage(props: {
       nextAppt.set(a.patient_id, { scheduled_at: a.scheduled_at, reason: a.reason });
   });
 
-  // Filter
+  // Filter (la RLS limite déjà aux patients assignés au praticien)
   const filtered = all.filter((p) => {
     const fullName =
       `${p.profiles.first_name} ${p.profiles.last_name}`.toLowerCase();
@@ -143,7 +133,6 @@ export default async function PatientsListPage(props: {
     if (goal && p.activeJourney?.sport_goal !== goal) return false;
     if (onlyWithAlerts && (alertCount.get(p.id)?.total ?? 0) === 0)
       return false;
-    if (onlyMine && !myPatientIds.has(p.id)) return false;
     return true;
   });
 
@@ -163,7 +152,6 @@ export default async function PatientsListPage(props: {
     if (value) u.set("goal", value);
     if (q) u.set("q", q);
     if (onlyWithAlerts) u.set("alerts", "1");
-    if (onlyMine) u.set("mine", "1");
     const s = u.toString();
     return s ? `/patients?${s}` : "/patients";
   }
@@ -172,16 +160,6 @@ export default async function PatientsListPage(props: {
     if (goal) u.set("goal", goal);
     if (q) u.set("q", q);
     if (!onlyWithAlerts) u.set("alerts", "1");
-    if (onlyMine) u.set("mine", "1");
-    const s = u.toString();
-    return s ? `/patients?${s}` : "/patients";
-  }
-  function mineToggleHref(): string {
-    const u = new URLSearchParams();
-    if (goal) u.set("goal", goal);
-    if (q) u.set("q", q);
-    if (onlyWithAlerts) u.set("alerts", "1");
-    if (!onlyMine) u.set("mine", "1");
     const s = u.toString();
     return s ? `/patients?${s}` : "/patients";
   }
@@ -191,17 +169,17 @@ export default async function PatientsListPage(props: {
       <header>
         <p className="text-sm text-ink-muted">Vos patients</p>
         <h1 className="mt-1 text-4xl font-extrabold tracking-tight">
-          Tous les patients{" "}
+          Mes patients{" "}
           <span className="font-accent font-normal text-coral">
             en préparation
           </span>
         </h1>
         <p className="mt-2 text-ink-muted">
-          {filtered.length} patient{filtered.length > 1 ? "s" : ""}
+          {filtered.length} patient{filtered.length > 1 ? "s" : ""} suivi
+          {filtered.length > 1 ? "s" : ""} par vous
           {q && ` correspondent à « ${q} »`}
           {goal && ` · ${SPORT_GOAL_LABELS[goal]}`}
           {onlyWithAlerts && " · avec alertes ouvertes"}
-          {onlyMine && " · suivis par vous"}
         </p>
       </header>
 
@@ -251,16 +229,6 @@ export default async function PatientsListPage(props: {
           >
             <AlertTriangle size={13} strokeWidth={2} />
             Avec alertes
-          </Link>
-          <Link
-            href={mineToggleHref() as never}
-            className={`rounded-full border px-3.5 py-1.5 text-xs font-bold transition-colors ${
-              onlyMine
-                ? "border-coral bg-coral-bg text-coral"
-                : "border-line bg-surface text-ink-muted hover:border-coral hover:text-coral"
-            }`}
-          >
-            Mes patients
           </Link>
         </div>
       </section>

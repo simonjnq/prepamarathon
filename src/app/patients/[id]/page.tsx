@@ -44,6 +44,10 @@ import { AIAudit } from "./ai-audit";
 import { RemindersSection, type Reminder } from "./reminders-section";
 import { UploadDocument } from "./upload-document";
 import { CaseDiscussion, type CaseMessage } from "./case-discussion";
+import {
+  AppointmentNotesPanel,
+  type AppointmentDoc,
+} from "./appointment-notes-panel";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { resolveAlertAction } from "./actions";
 
@@ -209,9 +213,25 @@ export default async function PatientDetailPage(props: {
 
   const { data: docs } = await supabase
     .from("documents")
-    .select("id, type, title, description, file_url, created_at, uploaded_by")
+    .select(
+      "id, type, title, description, file_url, created_at, uploaded_by, appointment_id",
+    )
     .eq("patient_id", patientId)
     .order("created_at", { ascending: false });
+  const docsByAppt = new Map<string, AppointmentDoc[]>();
+  (docs ?? []).forEach((d) => {
+    if (!d.appointment_id) return;
+    const arr = docsByAppt.get(d.appointment_id) ?? [];
+    arr.push({
+      id: d.id,
+      type: d.type,
+      title: d.title,
+      description: d.description,
+      file_url: d.file_url,
+      created_at: d.created_at,
+    });
+    docsByAppt.set(d.appointment_id, arr);
+  });
 
   const { data: reminderRows } = await supabase
     .from("reminders")
@@ -760,6 +780,12 @@ export default async function PatientDetailPage(props: {
                         apptId={a.id}
                         patientId={patientId}
                       />
+                      <AppointmentNotesPanel
+                        apptId={a.id}
+                        patientId={patientId}
+                        initialSummary={a.summary ?? null}
+                        initialDocs={docsByAppt.get(a.id) ?? []}
+                      />
                     </li>
                   );
                 })}
@@ -800,6 +826,12 @@ export default async function PatientDetailPage(props: {
                           « {a.summary} »
                         </p>
                       )}
+                      <AppointmentNotesPanel
+                        apptId={a.id}
+                        patientId={patientId}
+                        initialSummary={a.summary ?? null}
+                        initialDocs={docsByAppt.get(a.id) ?? []}
+                      />
                     </li>
                   );
                 })}

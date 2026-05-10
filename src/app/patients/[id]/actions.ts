@@ -252,6 +252,7 @@ export async function addDocumentRowAction(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   const fileUrl = String(formData.get("file_url") ?? "").trim();
+  const appointmentId = String(formData.get("appointment_id") ?? "");
   if (!patientId || !title) return;
 
   await supabase.from("documents").insert({
@@ -261,10 +262,24 @@ export async function addDocumentRowAction(formData: FormData) {
     title,
     description: description || null,
     file_url: fileUrl || null,
+    appointment_id: appointmentId || null,
   });
 
   revalidatePath(`/patients/${patientId}`);
   revalidatePath("/mes-documents");
+}
+
+export async function updateAppointmentNoteAction(formData: FormData) {
+  const { supabase } = await requirePractitioner();
+  const apptId = String(formData.get("appointment_id") ?? "");
+  const patientId = String(formData.get("patient_id") ?? "");
+  const summary = String(formData.get("summary") ?? "").trim();
+  if (!apptId) return;
+  await supabase
+    .from("appointments")
+    .update({ summary: summary || null })
+    .eq("id", apptId);
+  if (patientId) revalidatePath(`/patients/${patientId}`);
 }
 
 export async function resolveAlertAction(formData: FormData) {
