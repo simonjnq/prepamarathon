@@ -43,6 +43,7 @@ import {
 import { AIAudit } from "./ai-audit";
 import { RemindersSection, type Reminder } from "./reminders-section";
 import { UploadDocument } from "./upload-document";
+import { HealthRibbon } from "@/components/health-ribbon";
 import { CaseDiscussion, type CaseMessage } from "./case-discussion";
 import {
   AppointmentNotesPanel,
@@ -390,6 +391,13 @@ export default async function PatientDetailPage(props: {
         ]}
         channel={`patient-${patientId}`}
       />
+      <HealthRibbon
+        allergies={patient.allergies}
+        medications={patient.medications}
+        bloodType={patient.blood_type}
+        hasUrgentAlert={openAlerts.some((a) => a.severity === "urgent")}
+      />
+
       <Link
         href={"/patients" as never}
         className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-coral"
