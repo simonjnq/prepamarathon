@@ -50,6 +50,7 @@ import {
 } from "./appointment-notes-panel";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { generateDocumentSignedUrls } from "@/lib/storage";
+import { logAccess } from "@/lib/access-log";
 import { resolveAlertAction } from "./actions";
 
 export default async function PatientDetailPage(props: {
@@ -84,6 +85,37 @@ export default async function PatientDetailPage(props: {
   ]);
 
   if (!patient || !pf) notFound();
+
+  // Trace d'accès RGPD : on log dès qu'on a confirmé la lecture
+  await logAccess(supabase, {
+    patientId,
+    action: "view_patient",
+    resource: `/patients/${patientId}`,
+  });
+
+  // Récupération du journal d'accès pour affichage (10 dernières)
+  const { data: accessLogRows } = await supabase
+    .from("access_log")
+    .select("id, action, created_at, actor_id")
+    .eq("patient_id", patientId)
+    .order("created_at", { ascending: false })
+    .limit(10);
+  const actorIds = Array.from(
+    new Set((accessLogRows ?? []).map((r) => r.actor_id)),
+  );
+  const actorNameById = new Map<string, string>();
+  if (actorIds.length > 0) {
+    const { data: actorRows } = await supabase
+      .from("profiles")
+      .select("id, first_name, last_name, role")
+      .in("id", actorIds);
+    (actorRows ?? []).forEach((p) => {
+      actorNameById.set(
+        p.id,
+        `${p.first_name} ${p.last_name}${p.role === "patient" ? " (le patient)" : ""}`,
+      );
+    });
+  }
 
   const { data: journey } = await supabase
     .from("journeys")
@@ -874,6 +906,39 @@ export default async function PatientDetailPage(props: {
               </ul>
             </Section>
           )}
+
+          {/* Journal d'audit RGPD — 10 derniers accès */}
+          <Section
+            icon={
+              <Clock size={18} strokeWidth={1.75} className="text-coral" />
+            }
+            title="Historique de consultation"
+          >
+            {accessLogRows && accessLogRows.length > 0 ? (
+              <ul className="space-y-1.5">
+                {accessLogRows.map((log) => (
+                  <li
+                    key={log.id}
+                    className="flex items-baseline justify-between gap-2 text-xs"
+                  >
+                    <span className="font-medium">
+                      {actorNameById.get(log.actor_id) ?? "Utilisateur inconnu"}
+                    </span>
+                    <span className="text-ink-light">
+                      {fmtRelative(log.created_at)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-xs text-ink-muted">
+                Aucune consultation tracée pour l&apos;instant.
+              </p>
+            )}
+            <p className="mt-3 text-[10px] text-ink-light">
+              Toute consultation du dossier est journalisée (RGPD art. 32).
+            </p>
+          </Section>
         </div>
       </div>
 
