@@ -5,12 +5,17 @@ import { z } from "zod";
 import { requirePractitioner } from "@/lib/auth";
 import { Schemas, field, stripHtml } from "@/lib/validation";
 
-const SuggestionsSchema = z.array(
-  z.object({
-    title: z.string().min(1).max(200),
-    dueInDays: z.number().int().min(0).max(365),
-  }),
-);
+// Discriminated union des suggestions IA / heuristique
+const SuggestionItem = z.object({
+  kind: z.enum(["task", "alert", "pain_point"]).default("task"),
+  title: z.string().min(1).max(200),
+  reasoning: z.string().max(500).optional().default(""),
+  dueInDays: z.number().int().min(0).max(365).optional().nullable(),
+  alertSeverity: z.enum(["info", "warning", "urgent"]).optional().nullable(),
+  painBodyZone: z.string().max(100).optional().nullable(),
+  painSeverity: z.number().int().min(0).max(10).optional().nullable(),
+});
+const SuggestionsSchema = z.array(SuggestionItem);
 
 export async function createNoteAction(formData: FormData) {
   const { supabase, profile } = await requirePractitioner();
@@ -28,7 +33,7 @@ export async function createNoteAction(formData: FormData) {
     .single();
   if (error || !note) throw new Error(error?.message ?? "Note insert failed");
 
-  let selected: Array<{ title: string; dueInDays: number }> = [];
+  let selected: Array<z.infer<typeof SuggestionItem>> = [];
   try {
     const parsed = JSON.parse(selectedRaw);
     const r = SuggestionsSchema.safeParse(parsed);
@@ -37,24 +42,62 @@ export async function createNoteAction(formData: FormData) {
     selected = [];
   }
 
-  if (selected.length > 0) {
-    const today = new Date("2026-05-09T10:00:00Z").getTime();
-    await supabase.from("tasks").insert(
-      selected.map((s) => ({
-        patient_id: patientId,
-        title: stripHtml(s.title).trim().slice(0, 200),
-        status: "pending",
-        source: isAi ? "ai" : "practitioner",
-        source_practitioner_id: profile.id,
-        source_note_id: note.id,
-        due_at: new Date(today + s.dueInDays * 86_400_000)
-          .toISOString()
-          .slice(0, 10),
-      })),
-    );
+  if (selected.length === 0) {
+    revalidatePath(`/patients/${patientId}`);
+    return;
   }
 
+  const today = new Date("2026-05-10T10:00:00Z").getTime();
+  const todayDate = new Date(today).toISOString().slice(0, 10);
+  const sourceTag = isAi ? "ai" : "practitioner";
+
+  // Tasks
+  const taskRows = selected
+    .filter((s) => s.kind === "task")
+    .map((s) => ({
+      patient_id: patientId,
+      title: stripHtml(s.title).trim().slice(0, 200),
+      status: "pending" as const,
+      source: sourceTag,
+      source_practitioner_id: profile.id,
+      source_note_id: note.id,
+      due_at: new Date(today + (s.dueInDays ?? 7) * 86_400_000)
+        .toISOString()
+        .slice(0, 10),
+    }));
+  if (taskRows.length > 0) await supabase.from("tasks").insert(taskRows);
+
+  // Alerts
+  const alertRows = selected
+    .filter((s) => s.kind === "alert")
+    .map((s) => ({
+      patient_id: patientId,
+      severity: s.alertSeverity ?? "warning",
+      title: stripHtml(s.title).trim().slice(0, 200),
+      message: s.reasoning
+        ? stripHtml(s.reasoning).slice(0, 500)
+        : "Suggéré par l'IA depuis une note praticien.",
+      source: sourceTag,
+    }));
+  if (alertRows.length > 0) await supabase.from("alerts").insert(alertRows);
+
+  // Pain points
+  const painRows = selected
+    .filter((s) => s.kind === "pain_point" && s.painBodyZone)
+    .map((s) => ({
+      patient_id: patientId,
+      body_zone: stripHtml(s.painBodyZone!).slice(0, 100),
+      severity: s.painSeverity ?? 5,
+      description: s.reasoning
+        ? stripHtml(s.reasoning).slice(0, 500)
+        : null,
+      started_on: todayDate,
+    }));
+  if (painRows.length > 0) await supabase.from("pain_points").insert(painRows);
+
   revalidatePath(`/patients/${patientId}`);
+  revalidatePath("/alerts");
+  revalidatePath("/dashboard");
 }
 
 const SPECIALTY_TO_STEP_CATEGORY: Record<string, string> = {
