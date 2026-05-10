@@ -43,11 +43,13 @@ export function AppointmentNotesPanel({
   patientId,
   initialSummary,
   initialDocs,
+  canEdit = true,
 }: {
   apptId: string;
   patientId: string;
   initialSummary: string | null;
   initialDocs: AppointmentDoc[];
+  canEdit?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [summary, setSummary] = useState(initialSummary ?? "");
@@ -136,35 +138,52 @@ export function AppointmentNotesPanel({
 
       {open && (
         <div className="mt-2 space-y-3 rounded-md border border-line bg-surface-warm p-3">
+          {!canEdit && (
+            <p className="rounded-sm bg-stone-bg px-2.5 py-1.5 text-xs text-stone">
+              🔒 Lecture seule — vous n&apos;êtes pas le praticien de ce RDV.
+            </p>
+          )}
           {/* Note / compte rendu */}
           <div>
             <label className="text-xs font-bold uppercase tracking-wider text-ink-muted">
               Compte rendu / note de consultation
             </label>
-            <textarea
-              value={summary}
-              onChange={(e) => setSummary(e.target.value)}
-              rows={3}
-              placeholder="Observations, diagnostic, recommandations…"
-              className="input mt-1.5 resize-y text-sm"
-            />
-            <div className="mt-2 flex items-center justify-between gap-2">
-              {savedAt ? (
-                <span className="text-xs font-bold text-leaf">
-                  ✓ Note enregistrée
-                </span>
-              ) : (
-                <span className="text-xs text-ink-light" />
-              )}
-              <button
-                type="button"
-                onClick={saveNote}
-                disabled={savingNote}
-                className="btn-primary text-xs! px-3! py-1!"
-              >
-                {savingNote ? "…" : "Enregistrer la note"}
-              </button>
-            </div>
+            {canEdit ? (
+              <>
+                <textarea
+                  value={summary}
+                  onChange={(e) => setSummary(e.target.value)}
+                  rows={3}
+                  placeholder="Observations, diagnostic, recommandations…"
+                  className="input mt-1.5 resize-y text-sm"
+                />
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  {savedAt ? (
+                    <span className="text-xs font-bold text-leaf">
+                      ✓ Note enregistrée
+                    </span>
+                  ) : (
+                    <span className="text-xs text-ink-light" />
+                  )}
+                  <button
+                    type="button"
+                    onClick={saveNote}
+                    disabled={savingNote}
+                    className="btn-primary text-xs! px-3! py-1!"
+                  >
+                    {savingNote ? "…" : "Enregistrer la note"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <p className="mt-1.5 whitespace-pre-line rounded-sm bg-surface px-2.5 py-2 text-sm text-ink">
+                {summary || (
+                  <span className="italic text-ink-light">
+                    Aucun compte rendu rédigé.
+                  </span>
+                )}
+              </p>
+            )}
           </div>
 
           {/* Existing docs */}
@@ -218,6 +237,7 @@ export function AppointmentNotesPanel({
           )}
 
           {/* Upload */}
+          {canEdit && (
           <div className="border-t border-line pt-3">
             <p className="text-xs font-bold uppercase tracking-wider text-ink-muted">
               Joindre un document à ce RDV
@@ -296,6 +316,7 @@ export function AppointmentNotesPanel({
               </div>
             )}
           </div>
+          )}
         </div>
       )}
     </div>

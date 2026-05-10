@@ -139,7 +139,7 @@ export default async function PatientDetailPage(props: {
   const { data: appts } = await supabase
     .from("appointments")
     .select(
-      "id, scheduled_at, duration_min, location, status, reason, summary, practitioners(profiles(first_name, last_name), specialty)",
+      "id, scheduled_at, duration_min, location, status, reason, summary, practitioner_id, practitioners(profiles(first_name, last_name), specialty)",
     )
     .eq("patient_id", patientId)
     .order("scheduled_at", { ascending: false });
@@ -763,6 +763,9 @@ export default async function PatientDetailPage(props: {
                       };
                     }
                   ).practitioners;
+                  const isOwn =
+                    (a as unknown as { practitioner_id: string })
+                      .practitioner_id === me.id;
                   return (
                     <li
                       key={a.id}
@@ -775,16 +778,24 @@ export default async function PatientDetailPage(props: {
                       <p className="mt-1 text-xs text-ink-light">
                         {pp.profiles.first_name} {pp.profiles.last_name} ·{" "}
                         {SPECIALTY_LABELS[pp.specialty] ?? pp.specialty}
+                        {isOwn && (
+                          <span className="ml-1 font-bold text-coral">
+                            (vous)
+                          </span>
+                        )}
                       </p>
-                      <AppointmentActions
-                        apptId={a.id}
-                        patientId={patientId}
-                      />
+                      {isOwn && (
+                        <AppointmentActions
+                          apptId={a.id}
+                          patientId={patientId}
+                        />
+                      )}
                       <AppointmentNotesPanel
                         apptId={a.id}
                         patientId={patientId}
                         initialSummary={a.summary ?? null}
                         initialDocs={docsByAppt.get(a.id) ?? []}
+                        canEdit={isOwn}
                       />
                     </li>
                   );
@@ -811,6 +822,9 @@ export default async function PatientDetailPage(props: {
                       };
                     }
                   ).practitioners;
+                  const isOwn =
+                    (a as unknown as { practitioner_id: string })
+                      .practitioner_id === me.id;
                   return (
                     <li key={a.id} className="text-sm">
                       <p className="font-bold">{fmtDateTime(a.scheduled_at)}</p>
@@ -820,6 +834,11 @@ export default async function PatientDetailPage(props: {
                         <span className="text-ink-light">
                           ({APPOINTMENT_STATUS_LABELS[a.status] ?? a.status})
                         </span>
+                        {isOwn && (
+                          <span className="ml-1 font-bold text-coral">
+                            (vous)
+                          </span>
+                        )}
                       </p>
                       {a.summary && (
                         <p className="mt-0.5 text-xs italic text-ink-muted line-clamp-2">
@@ -831,6 +850,7 @@ export default async function PatientDetailPage(props: {
                         patientId={patientId}
                         initialSummary={a.summary ?? null}
                         initialDocs={docsByAppt.get(a.id) ?? []}
+                        canEdit={isOwn}
                       />
                     </li>
                   );
