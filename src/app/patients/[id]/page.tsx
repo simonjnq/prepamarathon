@@ -41,6 +41,7 @@ import {
   RemoveAssignmentButton,
 } from "./add-practitioner";
 import { AIAudit } from "./ai-audit";
+import { AISummary } from "./ai-summary";
 import { RemindersSection, type Reminder } from "./reminders-section";
 import { UploadDocument } from "./upload-document";
 import { HealthRibbon } from "@/components/health-ribbon";
@@ -500,9 +501,10 @@ export default async function PatientDetailPage(props: {
         </section>
       )}
 
-      {/* AI audit (full width) */}
-      <div className="mt-7">
+      {/* AI audit + synthèse hebdo (côte à côte) */}
+      <div className="mt-7 grid gap-4 lg:grid-cols-2">
         <AIAudit patientId={patientId} />
+        <AISummary patientId={patientId} />
       </div>
 
       {/* Team discussion (full width) */}

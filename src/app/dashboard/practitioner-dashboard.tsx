@@ -6,6 +6,7 @@ import {
   ClipboardCheck,
   Users,
 } from "lucide-react";
+import { AITriage } from "./ai-triage";
 import { Avatar } from "@/components/avatar";
 import { Badge, severityBadgeVariant } from "@/components/badge";
 import type { SessionProfile } from "@/lib/auth";
@@ -162,6 +163,10 @@ export async function PractitionerDashboard({
           </p>
           <p className="mt-1 text-sm text-ink-muted">consultation(s) prévues</p>
         </div>
+      </section>
+
+      <section className="mt-8">
+        <AITriage />
       </section>
 
       <section className="mt-8 grid gap-5 lg:grid-cols-5">
