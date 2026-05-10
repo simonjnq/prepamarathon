@@ -7,6 +7,7 @@ import {
   Users,
 } from "lucide-react";
 import { AITriage } from "./ai-triage";
+import { SurveillanceButton } from "./surveillance-button";
 import { Avatar } from "@/components/avatar";
 import { Badge, severityBadgeVariant } from "@/components/badge";
 import type { SessionProfile } from "@/lib/auth";
@@ -165,8 +166,13 @@ export async function PractitionerDashboard({
         </div>
       </section>
 
-      <section className="mt-8">
-        <AITriage />
+      <section className="mt-8 grid gap-5 lg:grid-cols-5">
+        <div className="lg:col-span-3">
+          <AITriage />
+        </div>
+        <div className="lg:col-span-2">
+          <SurveillanceButton />
+        </div>
       </section>
 
       <section className="mt-8 grid gap-5 lg:grid-cols-5">
