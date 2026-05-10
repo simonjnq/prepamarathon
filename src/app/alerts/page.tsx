@@ -22,6 +22,21 @@ const SEVERITY_CHIPS: Array<{ value: string | null; label: string }> = [
 
 type Search = { severity?: string; show?: string };
 
+type AlertRow = {
+  id: string;
+  severity: string;
+  title: string;
+  message: string | null;
+  source: string | null;
+  created_at: string;
+  resolved_at: string | null;
+  patient_id: string;
+  patients: {
+    profiles: { first_name: string; last_name: string };
+    occupation: string | null;
+  };
+};
+
 export default async function AlertsPage(props: {
   searchParams: Promise<Search>;
 }) {
@@ -62,20 +77,6 @@ export default async function AlertsPage(props: {
     alerts = r.data;
   }
 
-  type AlertRow = {
-    id: string;
-    severity: string;
-    title: string;
-    message: string | null;
-    source: string | null;
-    created_at: string;
-    resolved_at: string | null;
-    patient_id: string;
-    patients: {
-      profiles: { first_name: string; last_name: string };
-      occupation: string | null;
-    };
-  };
   const list = (alerts ?? []) as unknown as AlertRow[];
 
   function chipHref(value: string | null): string {
@@ -168,89 +169,96 @@ export default async function AlertsPage(props: {
         </Link>
       </section>
 
-      <section className="mt-6 space-y-3">
+      <section className="mt-6 space-y-6">
         {list.length === 0 ? (
           <p className="card p-8 text-center text-ink-muted">
             Aucune alerte ne correspond à ces critères.
           </p>
         ) : (
-          list.map((a) => {
-            const pp = a.patients.profiles;
-            return (
-              <article
-                key={a.id}
-                className={`card p-5 ${a.resolved_at ? "opacity-60" : ""}`}
-              >
-                <div className="flex flex-wrap items-start gap-4">
-                  <div className="hidden sm:block">
-                    <Avatar
-                      firstName={pp.first_name}
-                      lastName={pp.last_name}
-                      size={48}
-                    />
+          (() => {
+            // Regroupement par patient_id pour réduire le bruit
+            const grouped = new Map<string, AlertRow[]>();
+            list.forEach((a) => {
+              const arr = grouped.get(a.patient_id) ?? [];
+              arr.push(a);
+              grouped.set(a.patient_id, arr);
+            });
+            return Array.from(grouped.entries()).map(([pid, group]) => {
+              const pp = group[0].patients.profiles;
+              return (
+                <div key={pid}>
+                  <div className="mb-2 flex items-baseline gap-2">
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-ink-muted">
+                      {pp.first_name} {pp.last_name}
+                    </h3>
+                    <span className="text-xs text-ink-light">
+                      {group.length} alerte{group.length > 1 ? "s" : ""}
+                    </span>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant={severityBadgeVariant(a.severity)}>
-                        <AlertTriangle
-                          size={12}
-                          strokeWidth={2.5}
-                          className="mr-1 inline"
-                        />
-                        {ALERT_SEVERITY_LABELS[a.severity] ?? a.severity}
-                      </Badge>
-                      <p className="font-extrabold">{a.title}</p>
-                      {a.resolved_at && (
-                        <Badge variant="leaf">Résolue</Badge>
-                      )}
-                    </div>
-                    {a.message && (
-                      <p className="mt-1.5 text-sm text-ink-muted">
-                        {a.message}
-                      </p>
-                    )}
-                    <p className="mt-2 text-xs text-ink-light">
-                      Créée {fmtRelative(a.created_at)}
-                      {a.source && ` · source : ${a.source}`}
-                      {a.resolved_at && ` · résolue ${fmtDateTime(a.resolved_at)}`}
-                    </p>
-
-                    <Link
-                      href={`/patients/${a.patient_id}` as never}
-                      className="group mt-3 inline-flex items-center gap-2 text-sm font-bold text-coral hover:underline"
-                    >
-                      Patient&nbsp;:&nbsp;
-                      <span className="font-bold">
-                        {pp.first_name} {pp.last_name}
-                      </span>
-                      {a.patients.occupation && (
-                        <span className="text-ink-muted font-normal">
-                          ({a.patients.occupation})
-                        </span>
-                      )}
-                      <ChevronRight
-                        size={14}
-                        strokeWidth={2}
-                        className="transition-transform group-hover:translate-x-0.5"
-                      />
-                    </Link>
+                  <div className="space-y-2">
+                    {group.map(renderAlertCard)}
                   </div>
-
-                  {!a.resolved_at && (
-                    <form action={resolveAlertAction} className="shrink-0">
-                      <input type="hidden" name="alert_id" value={a.id} />
-                      <input type="hidden" name="patient_id" value={a.patient_id} />
-                      <button className="btn-secondary px-3! py-1.5! text-xs!">
-                        Marquer résolue
-                      </button>
-                    </form>
-                  )}
                 </div>
-              </article>
-            );
-          })
+              );
+            });
+          })()
         )}
       </section>
     </AppShell>
+  );
+}
+
+function renderAlertCard(a: AlertRow) {
+  return (
+    <article
+      key={a.id}
+      className={`card p-4 ${a.resolved_at ? "opacity-60" : ""}`}
+    >
+      <div className="flex flex-wrap items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant={severityBadgeVariant(a.severity)}>
+              <AlertTriangle
+                size={12}
+                strokeWidth={2.5}
+                className="mr-1 inline"
+              />
+              {ALERT_SEVERITY_LABELS[a.severity] ?? a.severity}
+            </Badge>
+            <p className="font-bold">{a.title}</p>
+            {a.resolved_at && <Badge variant="leaf">Résolue</Badge>}
+          </div>
+          {a.message && (
+            <p className="mt-1 text-sm text-ink-muted">{a.message}</p>
+          )}
+          <p className="mt-1.5 text-xs text-ink-light">
+            Créée {fmtRelative(a.created_at)}
+            {a.source && ` · source : ${a.source}`}
+            {a.resolved_at && ` · résolue ${fmtDateTime(a.resolved_at)}`}
+          </p>
+          <Link
+            href={`/patients/${a.patient_id}` as never}
+            className="group mt-2 inline-flex items-center gap-1 text-xs font-bold text-coral hover:underline"
+          >
+            Voir la fiche
+            <ChevronRight
+              size={12}
+              strokeWidth={2}
+              className="transition-transform group-hover:translate-x-0.5"
+            />
+          </Link>
+        </div>
+
+        {!a.resolved_at && (
+          <form action={resolveAlertAction} className="shrink-0">
+            <input type="hidden" name="alert_id" value={a.id} />
+            <input type="hidden" name="patient_id" value={a.patient_id} />
+            <button className="btn-secondary px-3! py-1.5! text-xs!">
+              Marquer résolue
+            </button>
+          </form>
+        )}
+      </div>
+    </article>
   );
 }

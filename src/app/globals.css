@@ -119,3 +119,41 @@ body {
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
+
+/* Impression / export PDF : on cache la nav, les CTA et les zones
+   interactives, et on imprime une fiche médicale propre. */
+@media print {
+  /* Cache la sidebar, le bottom nav, les boutons d'action */
+  aside,
+  nav,
+  form,
+  .print\:hidden,
+  button {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 11pt;
+  }
+  main {
+    padding: 0 !important;
+  }
+  .card {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+    page-break-inside: avoid;
+  }
+  /* Couleurs forcées en impression */
+  .text-coral,
+  .text-rust,
+  .text-amber,
+  .text-leaf,
+  .text-stone {
+    color: black !important;
+  }
+  /* Liens : afficher l'URL */
+  a[href]::after {
+    content: "" !important;
+  }
+}

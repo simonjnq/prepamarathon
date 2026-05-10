@@ -44,6 +44,7 @@ import { AIAudit } from "./ai-audit";
 import { RemindersSection, type Reminder } from "./reminders-section";
 import { UploadDocument } from "./upload-document";
 import { HealthRibbon } from "@/components/health-ribbon";
+import { PrintButton } from "@/components/print-button";
 import { CaseDiscussion, type CaseMessage } from "./case-discussion";
 import {
   AppointmentNotesPanel,
@@ -400,13 +401,16 @@ export default async function PatientDetailPage(props: {
         hasUrgentAlert={openAlerts.some((a) => a.severity === "urgent")}
       />
 
-      <Link
-        href={"/patients" as never}
-        className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-coral"
-      >
-        <ArrowLeft size={16} strokeWidth={1.75} />
-        Tous les patients
-      </Link>
+      <div className="flex items-center justify-between gap-3">
+        <Link
+          href={"/patients" as never}
+          className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-coral"
+        >
+          <ArrowLeft size={16} strokeWidth={1.75} />
+          Tous les patients
+        </Link>
+        <PrintButton />
+      </div>
 
       {/* Header */}
       <header className="mt-5 flex flex-wrap items-start gap-6">
