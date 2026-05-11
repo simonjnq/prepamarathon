@@ -127,7 +127,7 @@ C'est un produit médical. RLS très stricte appliquée :
 - **Validation server** : Zod + sanitization HTML sur toutes les server actions.
 - **Defense-in-depth** : les feeds praticien re-filtrent par assignment même si la RLS le ferait déjà.
 
-⚠️ Pour passer en prod réelle (vrais patients), il faut encore : hébergement HDS (Supabase ne l'est pas), 2FA, consentement explicite, droit à l'effacement, durée de rétention. Détaillé dans [`CLAUDE.md`](CLAUDE.md).
+⚠️ Pour passer en prod réelle (vrais patients), il faut encore : hébergement HDS (Supabase ne l'est pas), 2FA, consentement explicite, droit à l'effacement, durée de rétention.
 
 ---
 
@@ -180,14 +180,12 @@ scripts/
 ├── check-reminders.ts             # vérif des migrations
 └── test-gemini.ts                 # smoke test API Gemini
 
-context.md                         # spec produit complète
-CLAUDE.md                          # doc d'onboarding pour un agent
 DEMO_ACCOUNTS.md                   # liste des 13 comptes
 ```
 
 ## Design system
 
-Voir [`context.md`](context.md) pour la spec produit. Tokens dans [`src/app/globals.css`](src/app/globals.css).
+Tokens dans [`src/app/globals.css`](src/app/globals.css).
 
 - Fond crème `#F8F5F1`, accent corail `#E86F47`, texte noir doux `#242525`
 - Police corps : Inter · Police accent : Cormorant Garamond italique

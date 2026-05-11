@@ -41,3 +41,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Documents internes — gardés en local, hors GitHub
+context.md
+CLAUDE.md
+REFLEXION_PRODUIT.md
